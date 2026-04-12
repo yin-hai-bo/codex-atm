@@ -7,6 +7,7 @@
         xmlns:model="clr-namespace:CodexAtm.Core.Models;assembly=CodexAtm.Core"
         mc:Ignorable="d"
         Title="{x:Static local:AppVersionInfo.WindowTitle}"
+        Icon="Assets/CodexAtmIcon.ico"
         Width="1360"
         Height="860"
         MinWidth="1100"
