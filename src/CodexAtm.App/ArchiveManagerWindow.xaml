@@ -1,4 +1,4 @@
-<Window x:Class="CodexAtm.App.ArchiveManagerWindow"
+﻿<Window x:Class="CodexAtm.App.ArchiveManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -11,13 +11,211 @@
         Height="860"
         MinWidth="1100"
         MinHeight="720"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
     <Window.Resources>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" Invert="True" />
+
+        <Style x:Key="ThemeComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="2"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource PopupItemHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource PopupItemSelectedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ThemeComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource ThemeComboBoxItemStyle}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton ClickMode="Press"
+                                          Focusable="False"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="MainBorder"
+                                                Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                CornerRadius="10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="34" />
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Margin="{Binding Padding, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  VerticalAlignment="Center"
+                                                                  HorizontalAlignment="Left"
+                                                                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
+                                                <Border Grid.Column="1"
+                                                        Background="{DynamicResource AccentSurfaceBrush}"
+                                                        CornerRadius="0,10,10,0">
+                                                    <Path Width="10"
+                                                          Height="6"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          Stroke="{DynamicResource AccentTextBrush}"
+                                                          StrokeThickness="2"
+                                                          Data="M 0 0 L 5 5 L 10 0" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource AccentTextBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource AccentTextBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
+                                                <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PopupAnimation="Fade">
+                                <Border Margin="0,6,0,0"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                        MaxHeight="320"
+                                        Padding="6"
+                                        Background="{DynamicResource PopupBackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12">
+                                    <ScrollViewer CanContentScroll="True">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource ButtonPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DangerButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DangerHoverBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DangerHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DangerPressedBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DangerPressedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid Background="#F4F6FB">
+    <Grid Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -26,24 +224,31 @@
 
         <Border Margin="20,20,20,12"
                 Padding="20"
-                Background="White"
-                BorderBrush="#D8DFEB"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
                     <TextBlock FontSize="24"
                                FontWeight="SemiBold"
-                               Foreground="#1F2937"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                Text="Codex 归档线程管理器" />
                     <TextBlock Margin="0,6,0,0"
-                               Foreground="#52607A"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="查看、预览并删除本机 Codex App 的归档线程" />
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
+                    <ComboBox Width="140"
+                              Margin="0,0,12,0"
+                              Style="{StaticResource ThemeComboBoxStyle}"
+                              ItemsSource="{Binding ThemeModes}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="Mode"
+                              SelectedValue="{Binding SelectedThemeMode, Mode=TwoWay}" />
                     <TextBox Width="320"
                              Margin="0,0,12,0"
                              Padding="10,6"
@@ -51,6 +256,7 @@
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
                     <Button Width="110"
                             Padding="12,8"
+                            Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding RefreshCommand}"
                             Content="刷新列表" />
                 </StackPanel>
@@ -66,8 +272,8 @@
 
             <Border Grid.Column="0"
                     Padding="12"
-                    Background="White"
-                    BorderBrush="#D8DFEB"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="16">
                 <DockPanel>
@@ -75,7 +281,7 @@
                                Margin="4,4,4,12"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#1F2937"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                Text="归档列表" />
                     <ListView ItemsSource="{Binding Sessions}"
                               SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
@@ -86,8 +292,8 @@
                             <DataTemplate DataType="{x:Type model:ArchiveSessionSummary}">
                                 <Border Margin="0,0,0,10"
                                         Padding="14"
-                                        Background="#F8FAFD"
-                                        BorderBrush="#E3E9F3"
+                                        Background="{DynamicResource SurfaceMutedBrush}"
+                                        BorderBrush="{DynamicResource BorderMutedBrush}"
                                         BorderThickness="1"
                                         CornerRadius="12">
                                     <Grid>
@@ -104,20 +310,20 @@
                                         <TextBlock Text="{Binding DisplayTitle}"
                                                    FontSize="15"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#18212F"
+                                                   Foreground="{DynamicResource TextStrongBrush}"
                                                    TextTrimming="CharacterEllipsis" />
                                         <Border Grid.Column="1"
                                                 Padding="8,4"
-                                                Background="#E8EEF8"
+                                                Background="{DynamicResource AccentSurfaceBrush}"
                                                 CornerRadius="999">
-                                            <TextBlock Foreground="#294C7A"
+                                            <TextBlock Foreground="{DynamicResource AccentTextBrush}"
                                                        Text="{Binding ParseStatus}" />
                                         </Border>
 
                                         <TextBlock Grid.Row="1"
                                                    Grid.ColumnSpan="2"
                                                    Margin="0,8,0,0"
-                                                   Foreground="#52607A"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                    Text="{Binding Cwd}"
                                                    TextTrimming="CharacterEllipsis" />
 
@@ -127,16 +333,16 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Foreground="#6B7280"
+                                            <TextBlock Foreground="{DynamicResource TextTertiaryBrush}"
                                                        Text="{Binding FileName}"
                                                        TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="1"
                                                        Margin="12,0,0,0"
-                                                       Foreground="#6B7280"
+                                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                                        Text="{Binding DisplayFileSize}" />
                                             <TextBlock Grid.Column="2"
                                                        Margin="12,0,0,0"
-                                                       Foreground="#6B7280"
+                                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                                        Text="{Binding LastWriteTime}" />
                                         </Grid>
                                     </Grid>
@@ -149,15 +355,15 @@
 
             <Border Grid.Column="2"
                     Padding="18"
-                    Background="White"
-                    BorderBrush="#D8DFEB"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="16">
                 <Grid>
                     <Grid Visibility="{Binding SelectedSessionDetail, Converter={StaticResource InverseNullToVisibilityConverter}}">
                         <TextBlock VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
-                                   Foreground="#6B7280"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="选择左侧归档线程后，这里会显示元信息与最近几条消息。" />
                     </Grid>
 
@@ -166,13 +372,13 @@
                         <StackPanel>
                             <TextBlock FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2937"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        Text="详情预览" />
 
                             <Border Margin="0,14,0,16"
                                     Padding="14"
-                                    Background="#F8FAFD"
-                                    BorderBrush="#E3E9F3"
+                                    Background="{DynamicResource SurfaceMutedBrush}"
+                                    BorderBrush="{DynamicResource BorderMutedBrush}"
                                     BorderThickness="1"
                                     CornerRadius="12">
                                 <Grid>
@@ -191,35 +397,35 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Foreground="#52607A" Text="线程 ID" />
-                                    <TextBlock Grid.Column="1" Text="{Binding SelectedSessionDetail.Summary.SessionId}" TextWrapping="Wrap" />
+                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Text="线程 ID" />
+                                    <TextBlock Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.SessionId}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="1" Foreground="#52607A" Text="文件路径" />
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSessionDetail.Summary.FilePath}" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondaryBrush}" Text="文件路径" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.FilePath}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="2" Foreground="#52607A" Text="工作目录" />
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSessionDetail.Summary.Cwd}" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Row="2" Foreground="{DynamicResource TextSecondaryBrush}" Text="工作目录" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.Cwd}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="3" Foreground="#52607A" Text="修改时间" />
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedSessionDetail.Summary.LastWriteTime}" />
+                                    <TextBlock Grid.Row="3" Foreground="{DynamicResource TextSecondaryBrush}" Text="修改时间" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.LastWriteTime}" />
 
-                                    <TextBlock Grid.Row="4" Foreground="#52607A" Text="文件大小" />
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedSessionDetail.Summary.DisplayFileSize}" />
+                                    <TextBlock Grid.Row="4" Foreground="{DynamicResource TextSecondaryBrush}" Text="文件大小" />
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.DisplayFileSize}" />
 
-                                    <TextBlock Grid.Row="5" Foreground="#52607A" Text="来源" />
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedSessionDetail.Source}" />
+                                    <TextBlock Grid.Row="5" Foreground="{DynamicResource TextSecondaryBrush}" Text="来源" />
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Source}" />
 
-                                    <TextBlock Grid.Row="6" Foreground="#52607A" Text="Originator" />
-                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SelectedSessionDetail.Originator}" />
+                                    <TextBlock Grid.Row="6" Foreground="{DynamicResource TextSecondaryBrush}" Text="Originator" />
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Originator}" />
 
-                                    <TextBlock Grid.Row="7" Foreground="#52607A" Text="CLI Version" />
-                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding SelectedSessionDetail.CliVersion}" />
+                                    <TextBlock Grid.Row="7" Foreground="{DynamicResource TextSecondaryBrush}" Text="CLI Version" />
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.CliVersion}" />
                                 </Grid>
                             </Border>
 
                             <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2937"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        Text="最近几条消息" />
 
                             <ItemsControl Margin="0,12,0,0"
@@ -228,20 +434,21 @@
                                     <DataTemplate DataType="{x:Type model:ArchiveSessionMessage}">
                                         <Border Margin="0,0,0,10"
                                                 Padding="12"
-                                                Background="#FBFCFE"
-                                                BorderBrush="#E3E9F3"
+                                                Background="{DynamicResource MessageBackgroundBrush}"
+                                                BorderBrush="{DynamicResource BorderMutedBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="12">
                                             <StackPanel>
                                                 <DockPanel>
                                                     <TextBlock FontWeight="SemiBold"
-                                                               Foreground="#294C7A"
+                                                               Foreground="{DynamicResource AccentTextBrush}"
                                                                Text="{Binding Role}" />
                                                     <TextBlock DockPanel.Dock="Right"
-                                                               Foreground="#6B7280"
+                                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                                Text="{Binding Timestamp}" />
                                                 </DockPanel>
                                                 <TextBlock Margin="0,8,0,0"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                                            Text="{Binding Content}"
                                                            TextWrapping="Wrap" />
                                             </StackPanel>
@@ -258,8 +465,8 @@
         <Border Grid.Row="2"
                 Margin="20,0,20,20"
                 Padding="16,12"
-                Background="White"
-                BorderBrush="#D8DFEB"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16">
             <DockPanel>
@@ -268,20 +475,20 @@
                     <Button Width="130"
                             Margin="0,0,12,0"
                             Padding="12,8"
+                            Style="{StaticResource SecondaryButtonStyle}"
                             Click="RecycleSelectedSession_Click"
                             Content="移到回收站"
                             IsEnabled="{Binding CanDeleteSelectedSession}" />
                     <Button Width="130"
                             Padding="12,8"
-                            Background="#A61E2F"
-                            Foreground="White"
+                            Style="{StaticResource DangerButtonStyle}"
                             Click="DeleteSelectedSession_Click"
                             Content="永久删除"
                             IsEnabled="{Binding CanDeleteSelectedSession}" />
                 </StackPanel>
 
                 <TextBlock VerticalAlignment="Center"
-                           Foreground="#52607A"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="{Binding StatusText}" />
             </DockPanel>
         </Border>

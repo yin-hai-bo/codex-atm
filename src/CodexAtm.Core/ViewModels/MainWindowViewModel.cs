@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 
@@ -12,16 +12,20 @@ public sealed class MainWindowViewModel : ObservableObject
     private string _statusText = "准备就绪";
     private ArchiveSessionSummary? _selectedSession;
     private ArchiveSessionDetail? _selectedSessionDetail;
+    private ThemeMode _selectedThemeMode;
     private bool _isBusy;
     private IReadOnlyList<ArchiveSessionSummary> _allSessions = [];
 
-    public MainWindowViewModel(IArchiveSessionService archiveSessionService)
+    public MainWindowViewModel(IArchiveSessionService archiveSessionService, ThemeMode initialThemeMode = ThemeMode.System)
     {
         _archiveSessionService = archiveSessionService;
         _refreshCommand = new RelayCommand(Refresh, () => !IsBusy);
+        _selectedThemeMode = initialThemeMode;
     }
 
     public ObservableCollection<ArchiveSessionSummary> Sessions { get; } = [];
+
+    public IReadOnlyList<ThemeModeOption> ThemeModes { get; } = ThemeModeOption.DefaultOptions;
 
     public RelayCommand RefreshCommand => _refreshCommand;
 
@@ -79,6 +83,12 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         get => _selectedSessionDetail;
         private set => SetProperty(ref _selectedSessionDetail, value);
+    }
+
+    public ThemeMode SelectedThemeMode
+    {
+        get => _selectedThemeMode;
+        set => SetProperty(ref _selectedThemeMode, value);
     }
 
     public bool CanDeleteSelectedSession => !IsBusy && SelectedSession is not null;

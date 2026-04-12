@@ -1,4 +1,4 @@
-using CodexAtm.Core.Models;
+﻿using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
 
@@ -64,6 +64,17 @@ public sealed class MainWindowViewModelTests
 
         Assert.NotNull(viewModel.SelectedSessionDetail);
         Assert.Single(viewModel.SelectedSessionDetail.Messages);
+    }
+
+    [Fact]
+    public void Constructor_UsesProvidedThemeMode()
+    {
+        var service = new FakeArchiveSessionService([]);
+
+        var viewModel = new MainWindowViewModel(service, ThemeMode.Dark);
+
+        Assert.Equal(ThemeMode.Dark, viewModel.SelectedThemeMode);
+        Assert.Equal(3, viewModel.ThemeModes.Count);
     }
 
     private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview)
