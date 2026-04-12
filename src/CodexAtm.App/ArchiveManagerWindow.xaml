@@ -149,6 +149,7 @@
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="38" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -183,6 +184,7 @@
             <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="38" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
