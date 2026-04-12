@@ -285,6 +285,7 @@
                                Text="归档列表" />
                     <ListView ItemsSource="{Binding Sessions}"
                               SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                              SelectionMode="Single"
                               BorderThickness="0"
                               Background="Transparent"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
