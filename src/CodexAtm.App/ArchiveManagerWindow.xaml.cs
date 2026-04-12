@@ -37,6 +37,11 @@ public partial class ArchiveManagerWindow : Window
         DeleteSelectedSession(DeletionMode.Permanent, "确定要永久删除所选归档线程吗？此操作不可恢复。");
     }
 
+    private void AppTitle_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        ShowAboutDialog();
+    }
+
     private void DeleteSelectedSession(DeletionMode deletionMode, string message)
     {
         if (_viewModel.SelectedSession is null)
@@ -89,5 +94,15 @@ public partial class ArchiveManagerWindow : Window
     {
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return Path.Combine(userProfile, ".codex", "archived_sessions");
+    }
+
+    private void ShowAboutDialog()
+    {
+        var aboutWindow = new AboutWindow
+        {
+            Owner = this
+        };
+
+        aboutWindow.ShowDialog();
     }
 }

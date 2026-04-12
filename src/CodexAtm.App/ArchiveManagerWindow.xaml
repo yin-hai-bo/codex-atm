@@ -145,6 +145,17 @@
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
+        <Style x:Key="ClickableTitleStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+                    <Setter Property="TextDecorations" Value="Underline" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="SecondaryButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
@@ -236,7 +247,8 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock FontSize="24"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Style="{StaticResource ClickableTitleStyle}"
+                                   MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
                                    Text="Codex 归档线程管理器" />
                         <Border Margin="10,2,0,0"
                                 Padding="10,4"
