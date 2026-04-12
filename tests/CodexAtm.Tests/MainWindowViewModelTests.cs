@@ -19,6 +19,7 @@ public sealed class MainWindowViewModelTests
         viewModel.Refresh();
 
         Assert.Equal(2, viewModel.Sessions.Count);
+        Assert.Equal("已归档线程数：2", viewModel.StatusText);
         Assert.Null(viewModel.SelectedSession);
     }
 
@@ -35,10 +36,46 @@ public sealed class MainWindowViewModelTests
 
         viewModel.SearchText = "billing";
         Assert.Single(viewModel.Sessions);
+        Assert.Equal("符合过滤条件的线程数：1", viewModel.StatusText);
 
         viewModel.SearchText = "beta";
         Assert.Single(viewModel.Sessions);
+        Assert.Equal("符合过滤条件的线程数：1", viewModel.StatusText);
         Assert.Equal("b.jsonl", viewModel.Sessions[0].FileName);
+    }
+
+    [Fact]
+    public void ClearingSearchText_RestoresArchivedCountStatusText()
+    {
+        var service = new FakeArchiveSessionService(
+            [
+                CreateSummary("a.jsonl", @"C:\work\billing", "alpha task"),
+                CreateSummary("b.jsonl", @"C:\work\ops", "beta preview")
+            ]);
+        var viewModel = new MainWindowViewModel(service);
+        viewModel.Refresh();
+
+        viewModel.SearchText = "billing";
+        viewModel.SearchText = string.Empty;
+
+        Assert.Equal(2, viewModel.Sessions.Count);
+        Assert.Equal("已归档线程数：2", viewModel.StatusText);
+    }
+
+    [Fact]
+    public void DeleteSelectedSession_UpdatesStatusText()
+    {
+        var first = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
+        var second = CreateSummary("b.jsonl", @"C:\work\b", "beta task");
+        var service = new FakeArchiveSessionService([first, second]);
+        var viewModel = new MainWindowViewModel(service);
+        viewModel.Refresh();
+        viewModel.SelectedSession = viewModel.Sessions[0];
+
+        viewModel.DeleteSelectedSession(DeletionMode.Permanent);
+
+        Assert.Single(viewModel.Sessions);
+        Assert.Equal("已归档线程数：1", viewModel.StatusText);
     }
 
     [Fact]
@@ -75,6 +112,7 @@ public sealed class MainWindowViewModelTests
 
         Assert.Equal(ThemeMode.Dark, viewModel.SelectedThemeMode);
         Assert.Equal(3, viewModel.ThemeModes.Count);
+        Assert.Equal("已归档线程数：0", viewModel.StatusText);
     }
 
     [Fact]
@@ -113,11 +151,12 @@ public sealed class MainWindowViewModelTests
         IReadOnlyList<ArchiveSessionSummary> sessions,
         ArchiveSessionDetail? detail = null) : IArchiveSessionService
     {
-        private readonly IReadOnlyList<ArchiveSessionSummary> _sessions = sessions;
+        private readonly List<ArchiveSessionSummary> _sessions = [.. sessions];
         private readonly ArchiveSessionDetail? _detail = detail;
 
         public void DeleteSession(string filePath, DeletionMode deletionMode)
         {
+            _sessions.RemoveAll(item => string.Equals(item.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
         }
 
         public ArchiveSessionDetail GetSessionDetail(string filePath)
@@ -127,7 +166,7 @@ public sealed class MainWindowViewModelTests
 
         public IReadOnlyList<ArchiveSessionSummary> GetSessions()
         {
-            return _sessions;
+            return _sessions.ToArray();
         }
     }
 }

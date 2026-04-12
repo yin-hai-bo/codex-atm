@@ -9,7 +9,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly IArchiveSessionService _archiveSessionService;
     private readonly RelayCommand _refreshCommand;
     private string _searchText = string.Empty;
-    private string _statusText = "准备就绪";
+    private string _statusText = "已归档线程数：0";
     private ArchiveSessionSummary? _selectedSession;
     private ArchiveSessionDetail? _selectedSessionDetail;
     private ThemeMode _selectedThemeMode;
@@ -101,7 +101,6 @@ public sealed class MainWindowViewModel : ObservableObject
             var previousSelectionPath = SelectedSession?.FilePath;
             _allSessions = _archiveSessionService.GetSessions();
             ApplyFilter(previousSelectionPath);
-            StatusText = $"已加载 {_allSessions.Count} 个归档线程";
         }
         finally
         {
@@ -120,12 +119,10 @@ public sealed class MainWindowViewModel : ObservableObject
         try
         {
             _archiveSessionService.DeleteSession(SelectedSession.FilePath, deletionMode);
-            var deletedFileName = SelectedSession.FileName;
             SelectedSession = null;
             SelectedSessionDetail = null;
             _allSessions = _archiveSessionService.GetSessions();
             ApplyFilter();
-            StatusText = $"已删除 {deletedFileName}";
         }
         finally
         {
@@ -162,6 +159,8 @@ public sealed class MainWindowViewModel : ObservableObject
             Sessions.Add(session);
         }
 
+        UpdateStatusText(keyword);
+
         var nextSelection = !string.IsNullOrWhiteSpace(preferredSelectionPath)
             ? Sessions.FirstOrDefault(item => string.Equals(item.FilePath, preferredSelectionPath, StringComparison.OrdinalIgnoreCase))
             : null;
@@ -177,5 +176,12 @@ public sealed class MainWindowViewModel : ObservableObject
     private static bool Contains(string source, string keyword)
     {
         return source.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void UpdateStatusText(string keyword)
+    {
+        StatusText = string.IsNullOrWhiteSpace(keyword)
+            ? $"已归档线程数：{Sessions.Count}"
+            : $"符合过滤条件的线程数：{Sessions.Count}";
     }
 }
