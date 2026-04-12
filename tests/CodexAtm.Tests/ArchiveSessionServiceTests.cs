@@ -78,6 +78,55 @@ public sealed class ArchiveSessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void GetSessions_PrefersHumanReadablePreviewOverEnvironmentContext()
+    {
+        WriteArchiveFile(
+            "environment.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-6","cwd":"C:\\work\\demo","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            {"timestamp":"2026-04-08T03:45:08.426Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <cwd>C:\\work\\dwp-detector</cwd>\n</environment_context>\n请帮我排查登录失败的原因"}]}}
+            """);
+
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+
+        var session = Assert.Single(service.GetSessions());
+        Assert.Equal("请帮我排查登录失败的原因", session.FirstUserMessagePreview);
+    }
+
+    [Fact]
+    public void GetSessions_SkipsEnvironmentOnlyUserMessageAndUsesNextRealPrompt()
+    {
+        WriteArchiveFile(
+            "environment-only-first.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-7","cwd":"C:\\work\\demo","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            {"timestamp":"2026-04-08T03:45:08.426Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <cwd>C:\\work\\dwp-detector</cwd>\n</environment_context>"}]}}
+            {"timestamp":"2026-04-08T03:45:09.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"检查项目，排查可能的缺陷"}]}}
+            """);
+
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+
+        var session = Assert.Single(service.GetSessions());
+        Assert.Equal("检查项目，排查可能的缺陷", session.FirstUserMessagePreview);
+    }
+
+    [Fact]
+    public void GetSessions_UsesMyRequestSectionAsPreviewWhenPresent()
+    {
+        WriteArchiveFile(
+            "review-findings.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-8","cwd":"C:\\work\\demo","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            {"timestamp":"2026-04-08T03:45:08.426Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# Review findings:\n\n## Finding 1\n问题描述\n\n## My request for Codex:\n解决你提到的第2个问题"}]}}
+            """);
+
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+
+        var session = Assert.Single(service.GetSessions());
+        Assert.Equal("解决你提到的第2个问题", session.FirstUserMessagePreview);
+    }
+
+    [Fact]
     public void DeleteSession_Permanent_RemovesFile()
     {
         var filePath = WriteArchiveFile("delete.jsonl", """{"type":"session_meta","payload":{"id":"session-4"}}""");

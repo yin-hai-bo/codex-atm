@@ -222,6 +222,69 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         return compact[..(maxLength - 1)] + "…";
     }
 
+    private static string BuildPreview(string content)
+    {
+        var sanitized = RemoveTaggedBlock(content, "environment_context");
+        sanitized = RemoveTaggedBlock(sanitized, "user_instructions");
+        sanitized = RemoveTaggedBlock(sanitized, "developer_instructions");
+
+        var lines = sanitized
+            .Split(["\r\n", "\n"], StringSplitOptions.None)
+            .Select(line => line.Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Where(line => !line.StartsWith("<cwd>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("<environment_context>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("</environment_context>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("<user_instructions>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("</user_instructions>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("<developer_instructions>", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !line.StartsWith("</developer_instructions>", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        var preview = string.Join(" ", lines).Trim();
+        if (string.IsNullOrWhiteSpace(preview))
+        {
+            return string.Empty;
+        }
+
+        const string myRequestMarker = "## My request for Codex:";
+        var markerIndex = preview.IndexOf(myRequestMarker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex >= 0)
+        {
+            var requestedAction = preview[(markerIndex + myRequestMarker.Length)..].Trim();
+            if (!string.IsNullOrWhiteSpace(requestedAction))
+            {
+                preview = requestedAction;
+            }
+        }
+
+        return Shorten(preview, MAX_PREVIEW_LENGTH);
+    }
+
+    private static string RemoveTaggedBlock(string content, string tagName)
+    {
+        var startTag = $"<{tagName}>";
+        var endTag = $"</{tagName}>";
+        var result = content;
+
+        while (true)
+        {
+            var startIndex = result.IndexOf(startTag, StringComparison.OrdinalIgnoreCase);
+            if (startIndex < 0)
+            {
+                return result;
+            }
+
+            var endIndex = result.IndexOf(endTag, startIndex + startTag.Length, StringComparison.OrdinalIgnoreCase);
+            if (endIndex < 0)
+            {
+                return result.Remove(startIndex).Trim();
+            }
+
+            result = result.Remove(startIndex, endIndex + endTag.Length - startIndex).Trim();
+        }
+    }
+
     private sealed class ArchiveParseAccumulator(bool includeRecentMessages)
     {
         private readonly bool _includeRecentMessages = includeRecentMessages;
@@ -285,7 +348,11 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
 
             if (string.IsNullOrWhiteSpace(FirstUserMessagePreview) && role == "user")
             {
-                FirstUserMessagePreview = Shorten(content, MAX_PREVIEW_LENGTH);
+                var preview = BuildPreview(content);
+                if (!string.IsNullOrWhiteSpace(preview))
+                {
+                    FirstUserMessagePreview = preview;
+                }
             }
 
             if (!_includeRecentMessages)
