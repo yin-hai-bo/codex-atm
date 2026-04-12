@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:CodexAtm.App"
         xmlns:model="clr-namespace:CodexAtm.Core.Models;assembly=CodexAtm.Core"
         mc:Ignorable="d"
-        Title="Codex 归档线程管理器"
+        Title="{x:Static local:AppVersionInfo.WindowTitle}"
         Width="1360"
         Height="860"
         MinWidth="1100"
@@ -232,10 +232,20 @@
                 CornerRadius="16">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock FontSize="24"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="Codex 归档线程管理器" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="24"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Text="Codex 归档线程管理器" />
+                        <Border Margin="10,2,0,0"
+                                Padding="10,4"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource AccentSurfaceBrush}"
+                                CornerRadius="999">
+                            <TextBlock Foreground="{DynamicResource AccentTextBrush}"
+                                       Text="{x:Static local:AppVersionInfo.DisplayVersion}" />
+                        </Border>
+                    </StackPanel>
                     <TextBlock Margin="0,6,0,0"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="查看、预览并删除本机 Codex App 的归档线程" />
