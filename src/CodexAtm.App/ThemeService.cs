@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using CodexAtm.Core.Models;
 using Microsoft.Win32;
 

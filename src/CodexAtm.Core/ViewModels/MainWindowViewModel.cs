@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 
