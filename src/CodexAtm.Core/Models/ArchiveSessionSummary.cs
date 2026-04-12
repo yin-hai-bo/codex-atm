@@ -2,6 +2,8 @@ namespace CodexAtm.Core.Models;
 
 public sealed class ArchiveSessionSummary
 {
+    public const string UngroupedLabel = "未分组";
+
     public required string FilePath { get; init; }
 
     public required string FileName { get; init; }
@@ -31,4 +33,8 @@ public sealed class ArchiveSessionSummary
     public string DisplayTitle => string.IsNullOrWhiteSpace(FirstUserMessagePreview)
         ? FileName
         : FirstUserMessagePreview;
+
+    public string GroupDisplayName => string.IsNullOrWhiteSpace(Cwd)
+        ? UngroupedLabel
+        : Cwd;
 }

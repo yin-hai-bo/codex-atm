@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Data;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
@@ -20,6 +21,7 @@ public partial class ArchiveManagerWindow : Window
             new ArchiveSessionService(GetArchivedSessionsDirectory()),
             _themeService.CurrentThemeMode);
         DataContext = _viewModel;
+        ConfigureSessionGrouping();
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         Loaded += (_, _) => _viewModel.Refresh();
         Closed += (_, _) => _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
@@ -69,6 +71,18 @@ public partial class ArchiveManagerWindow : Window
         {
             _themeService.SetThemeMode(_viewModel.SelectedThemeMode);
         }
+    }
+
+    private void ConfigureSessionGrouping()
+    {
+        var view = CollectionViewSource.GetDefaultView(_viewModel.Sessions);
+        if (view.GroupDescriptions.OfType<PropertyGroupDescription>()
+            .Any(item => string.Equals(item.PropertyName, nameof(ArchiveSessionSummary.GroupDisplayName), StringComparison.Ordinal)))
+        {
+            return;
+        }
+
+        view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ArchiveSessionSummary.GroupDisplayName)));
     }
 
     private static string GetArchivedSessionsDirectory()

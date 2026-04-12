@@ -150,6 +150,7 @@ public sealed class MainWindowViewModel : ObservableObject
         var filtered = string.IsNullOrWhiteSpace(keyword)
             ? _allSessions
             : _allSessions.Where(item =>
+                Contains(item.GroupDisplayName, keyword) ||
                 Contains(item.FileName, keyword) ||
                 Contains(item.Cwd, keyword) ||
                 Contains(item.FirstUserMessagePreview, keyword))

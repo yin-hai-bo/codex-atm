@@ -298,7 +298,6 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         public string Source { get; private set; } = string.Empty;
         public string CliVersion { get; private set; } = string.Empty;
         public string FirstUserMessagePreview { get; private set; } = string.Empty;
-
         public void MarkLineError()
         {
             _hasLineErrors = true;

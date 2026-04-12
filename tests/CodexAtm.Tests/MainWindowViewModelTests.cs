@@ -77,6 +77,22 @@ public sealed class MainWindowViewModelTests
         Assert.Equal(3, viewModel.ThemeModes.Count);
     }
 
+    [Fact]
+    public void SessionSummary_UsesCwdAsGroupDisplayName()
+    {
+        var summary = CreateSummary("a.jsonl", @"C:\work\billing", "alpha task");
+
+        Assert.Equal(@"C:\work\billing", summary.GroupDisplayName);
+    }
+
+    [Fact]
+    public void SessionSummary_UsesUngroupedLabelWhenCwdMissing()
+    {
+        var summary = CreateSummary("a.jsonl", string.Empty, "alpha task");
+
+        Assert.Equal(ArchiveSessionSummary.UngroupedLabel, summary.GroupDisplayName);
+    }
+
     private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview)
     {
         return new ArchiveSessionSummary
