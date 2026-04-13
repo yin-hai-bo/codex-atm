@@ -1,16 +1,18 @@
 using System.Text;
 using System.Text.Json;
+using System.Runtime.InteropServices;
 using CodexAtm.Core.Models;
 using Microsoft.VisualBasic.FileIO;
 using SearchOption = System.IO.SearchOption;
 
 namespace CodexAtm.Core.Services;
 
-public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IArchiveSessionService
+public sealed class ArchiveSessionService(string archivedSessionsDirectory, string? threadStateDatabasePath = null) : IArchiveSessionService
 {
     private const int MAX_PREVIEW_LENGTH = 140;
     private const int MAX_RECENT_MESSAGES = 8;
     private readonly string _archivedSessionsDirectory = NormalizeDirectory(archivedSessionsDirectory);
+    private readonly string _threadStateDatabasePath = ResolveThreadStateDatabasePath(archivedSessionsDirectory, threadStateDatabasePath);
 
     public IReadOnlyList<ArchiveSessionSummary> GetSessions()
     {
@@ -19,9 +21,10 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
             return [];
         }
 
+        var threadTitles = LoadThreadTitles();
         return Directory
             .EnumerateFiles(_archivedSessionsDirectory, "*.jsonl", SearchOption.TopDirectoryOnly)
-            .Select(CreateSummary)
+            .Select(filePath => CreateSummary(filePath, threadTitles))
             .OrderByDescending(item => item.LastWriteTime)
             .ToArray();
     }
@@ -31,9 +34,10 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         var validatedPath = ValidateSessionPath(filePath);
         var fileInfo = new FileInfo(validatedPath);
         var parseResult = ParseFile(validatedPath, includeRecentMessages: true);
+        var threadTitles = LoadThreadTitles();
         return new ArchiveSessionDetail
         {
-            Summary = CreateSummary(fileInfo, parseResult),
+            Summary = CreateSummary(fileInfo, parseResult, threadTitles),
             Originator = parseResult.Originator,
             Source = parseResult.Source,
             CliVersion = parseResult.CliVersion,
@@ -62,15 +66,19 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         File.Delete(validatedPath);
     }
 
-    private ArchiveSessionSummary CreateSummary(string filePath)
+    private ArchiveSessionSummary CreateSummary(string filePath, IReadOnlyDictionary<string, string> threadTitles)
     {
         var fileInfo = new FileInfo(filePath);
         var parseResult = ParseFile(filePath, includeRecentMessages: false);
-        return CreateSummary(fileInfo, parseResult);
+        return CreateSummary(fileInfo, parseResult, threadTitles);
     }
 
-    private static ArchiveSessionSummary CreateSummary(FileInfo fileInfo, ArchiveParseResult parseResult)
+    private static ArchiveSessionSummary CreateSummary(
+        FileInfo fileInfo,
+        ArchiveParseResult parseResult,
+        IReadOnlyDictionary<string, string> threadTitles)
     {
+        var titleLookupKey = GetTitleLookupKey(fileInfo.Name, parseResult.SessionId);
         return new ArchiveSessionSummary
         {
             FilePath = fileInfo.FullName,
@@ -79,6 +87,9 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
             Cwd = parseResult.Cwd,
             LastWriteTime = new DateTimeOffset(fileInfo.LastWriteTimeUtc, TimeSpan.Zero).ToLocalTime(),
             FileSize = fileInfo.Exists ? fileInfo.Length : 0,
+            ThreadTitle = titleLookupKey.Length > 0 && threadTitles.TryGetValue(titleLookupKey, out var threadTitle)
+                ? threadTitle
+                : string.Empty,
             FirstUserMessagePreview = parseResult.FirstUserMessagePreview,
             ParseStatus = parseResult.Status,
             ParseError = parseResult.ParseError
@@ -171,6 +182,19 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         return Path.GetFullPath(path);
     }
 
+    private static string ResolveThreadStateDatabasePath(string archivedSessionsDirectory, string? threadStateDatabasePath)
+    {
+        if (!string.IsNullOrWhiteSpace(threadStateDatabasePath))
+        {
+            return Path.GetFullPath(threadStateDatabasePath);
+        }
+
+        var archiveRootDirectory = Directory.GetParent(Path.GetFullPath(archivedSessionsDirectory))?.FullName;
+        return string.IsNullOrWhiteSpace(archiveRootDirectory)
+            ? "state_5.sqlite"
+            : Path.Combine(archiveRootDirectory, "state_5.sqlite");
+    }
+
     private static string EnsureTrailingSeparator(string path)
     {
         return path.EndsWith(Path.DirectorySeparatorChar)
@@ -183,6 +207,39 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
         return element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString() ?? string.Empty
             : string.Empty;
+    }
+
+    private IReadOnlyDictionary<string, string> LoadThreadTitles()
+    {
+        if (!File.Exists(_threadStateDatabasePath))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return SqliteThreadTitleReader.ReadArchivedThreadTitles(_threadStateDatabasePath);
+        }
+        catch (Exception) when (File.Exists(_threadStateDatabasePath))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static string GetTitleLookupKey(string fileName, string sessionId)
+    {
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            return sessionId;
+        }
+
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+        if (string.IsNullOrWhiteSpace(fileNameWithoutExtension) || fileNameWithoutExtension.Length <= 36)
+        {
+            return string.Empty;
+        }
+
+        return fileNameWithoutExtension[^36..];
     }
 
     private static DateTimeOffset? GetTimestamp(JsonElement root)
@@ -417,5 +474,104 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory) : IA
                 string.Empty,
                 []);
         }
+    }
+
+    private static class SqliteThreadTitleReader
+    {
+        private const int SQLITE_OK = 0;
+        private const int SQLITE_ROW = 100;
+        private const int SQLITE_DONE = 101;
+        private const int SQLITE_OPEN_READONLY = 0x00000001;
+
+        public static IReadOnlyDictionary<string, string> ReadArchivedThreadTitles(string databasePath)
+        {
+            nint databaseHandle = 0;
+            nint statementHandle = 0;
+            try
+            {
+                ThrowIfNeeded(sqlite3_open_v2(databasePath, out databaseHandle, SQLITE_OPEN_READONLY, nint.Zero), databaseHandle);
+                ThrowIfNeeded(
+                    sqlite3_prepare_v2(
+                        databaseHandle,
+                        "select id, title from threads where archived = 1",
+                        -1,
+                        out statementHandle,
+                        nint.Zero),
+                    databaseHandle);
+
+                var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                while (true)
+                {
+                    var stepResult = sqlite3_step(statementHandle);
+                    if (stepResult == SQLITE_DONE)
+                    {
+                        return result;
+                    }
+
+                    if (stepResult != SQLITE_ROW)
+                    {
+                        ThrowIfNeeded(stepResult, databaseHandle);
+                    }
+
+                    var id = PtrToString(sqlite3_column_text(statementHandle, 0));
+                    var title = PtrToString(sqlite3_column_text(statementHandle, 1));
+                    if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(title))
+                    {
+                        result[id] = title;
+                    }
+                }
+            }
+            finally
+            {
+                if (statementHandle != 0)
+                {
+                    sqlite3_finalize(statementHandle);
+                }
+
+                if (databaseHandle != 0)
+                {
+                    sqlite3_close(databaseHandle);
+                }
+            }
+        }
+
+        private static string PtrToString(nint value)
+        {
+            return value == 0 ? string.Empty : Marshal.PtrToStringUTF8(value) ?? string.Empty;
+        }
+
+        private static void ThrowIfNeeded(int resultCode, nint databaseHandle)
+        {
+            if (resultCode == SQLITE_OK)
+            {
+                return;
+            }
+
+            var message = databaseHandle == 0
+                ? $"SQLite error {resultCode}."
+                : PtrToString(sqlite3_errmsg(databaseHandle));
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(message) ? $"SQLite error {resultCode}." : message);
+        }
+
+        [DllImport("winsqlite3", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_open_v2(string filename, out nint database, int flags, nint vfs);
+
+        [DllImport("winsqlite3", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_prepare_v2(nint database, string sql, int length, out nint statement, nint tail);
+
+        [DllImport("winsqlite3", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_step(nint statement);
+
+        [DllImport("winsqlite3", CallingConvention = CallingConvention.Cdecl)]
+        private static extern nint sqlite3_column_text(nint statement, int columnIndex);
+
+        [DllImport("winsqlite3", CallingConvention = CallingConvention.Cdecl)]
+        private static extern nint sqlite3_errmsg(nint database);
+
+        [DllImport("winsqlite3", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_finalize(nint statement);
+
+        [DllImport("winsqlite3", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_close(nint database);
     }
 }

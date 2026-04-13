@@ -16,6 +16,8 @@ public sealed class ArchiveSessionSummary
 
     public long FileSize { get; init; }
 
+    public string ThreadTitle { get; init; } = string.Empty;
+
     public string FirstUserMessagePreview { get; init; } = string.Empty;
 
     public ArchiveParseStatus ParseStatus { get; init; }
@@ -30,9 +32,11 @@ public sealed class ArchiveSessionSummary
         _ => $"{FileSize} B"
     };
 
-    public string DisplayTitle => string.IsNullOrWhiteSpace(FirstUserMessagePreview)
-        ? FileName
-        : FirstUserMessagePreview;
+    public string DisplayTitle => !string.IsNullOrWhiteSpace(ThreadTitle)
+        ? ThreadTitle
+        : string.IsNullOrWhiteSpace(FirstUserMessagePreview)
+            ? FileName
+            : FirstUserMessagePreview;
 
     public string GroupDisplayName => string.IsNullOrWhiteSpace(Cwd)
         ? UngroupedLabel

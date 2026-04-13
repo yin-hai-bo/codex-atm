@@ -45,6 +45,23 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void SearchText_FiltersByDisplayTitle()
+    {
+        var service = new FakeArchiveSessionService(
+            [
+                CreateSummary("a.jsonl", @"C:\work\billing", "alpha task", "从 index 读取的标题"),
+                CreateSummary("b.jsonl", @"C:\work\ops", "beta preview")
+            ]);
+        var viewModel = new MainWindowViewModel(service);
+        viewModel.Refresh();
+
+        viewModel.SearchText = "index 读取";
+
+        var session = Assert.Single(viewModel.Sessions);
+        Assert.Equal("a.jsonl", session.FileName);
+    }
+
+    [Fact]
     public void ClearingSearchText_RestoresArchivedCountStatusText()
     {
         var service = new FakeArchiveSessionService(
@@ -131,7 +148,7 @@ public sealed class MainWindowViewModelTests
         Assert.Equal(ArchiveSessionSummary.UngroupedLabel, summary.GroupDisplayName);
     }
 
-    private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview)
+    private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview, string threadTitle = "")
     {
         return new ArchiveSessionSummary
         {
@@ -141,6 +158,7 @@ public sealed class MainWindowViewModelTests
             Cwd = cwd,
             LastWriteTime = DateTimeOffset.Now,
             FileSize = 1,
+            ThreadTitle = threadTitle,
             FirstUserMessagePreview = preview,
             ParseStatus = ArchiveParseStatus.Success,
             ParseError = string.Empty
