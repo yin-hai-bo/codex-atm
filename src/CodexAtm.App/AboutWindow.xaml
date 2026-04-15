@@ -51,9 +51,19 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
             <Setter Property="TextDecorations" Value="Underline" />
         </Style>
+
+        <Style x:Key="ClickableTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="TextDecorations" Value="Underline" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
-    <Grid Margin="18" Background="Transparent">
+    <Grid x:Name="RootGrid" Margin="18" Background="Transparent">
         <Border Padding="24"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
@@ -93,7 +103,7 @@
                         <TextBlock FontSize="24"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="Codex 归档线程管理器" />
+                                   Text="Codex 归档线程管理" />
                         <TextBlock Margin="0,6,0,0"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    Text="查看、预览并管理本机 Codex App 的归档线程" />
@@ -128,8 +138,10 @@
                     <TextBlock Grid.Row="2"
                                Grid.Column="1"
                                VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
                                FontFamily="Consolas"
+                               Style="{StaticResource ClickableTextStyle}"
+                               MouseLeftButtonUp="CommitId_MouseLeftButtonUp"
+                               ToolTip="单击复制"
                                Text="{Binding CommitId, Mode=OneWay}" />
 
                     <TextBlock Grid.Row="4"
@@ -156,6 +168,20 @@
                         Click="CloseButton_Click"
                         Content="关闭" />
             </Grid>
+        </Border>
+
+        <Border x:Name="ToastBorder"
+                Panel.ZIndex="1"
+                Padding="14,8"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Background="{DynamicResource TextPrimaryBrush}"
+                CornerRadius="10"
+                Opacity="0"
+                Visibility="Collapsed">
+            <TextBlock x:Name="ToastText"
+                       Foreground="{DynamicResource SurfaceBrush}"
+                       Text="已复制到剪贴板" />
         </Border>
     </Grid>
 </Window>

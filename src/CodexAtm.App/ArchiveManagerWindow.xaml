@@ -249,7 +249,7 @@
                                    FontWeight="SemiBold"
                                    Style="{StaticResource ClickableTitleStyle}"
                                    MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
-                                   Text="Codex 归档线程管理器" />
+                                   Text="Codex 归档线程管理" />
                         <Border Margin="10,2,0,0"
                                 Padding="10,4"
                                 VerticalAlignment="Center"
@@ -274,16 +274,6 @@
                               DisplayMemberPath="DisplayName"
                               SelectedValuePath="Mode"
                               SelectedValue="{Binding SelectedThemeMode, Mode=TwoWay}" />
-                    <TextBox Width="320"
-                             Margin="0,0,12,0"
-                             Padding="10,6"
-                             VerticalContentAlignment="Center"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
-                    <Button Width="110"
-                            Padding="12,8"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{Binding RefreshCommand}"
-                            Content="刷新列表" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -302,12 +292,20 @@
                     BorderThickness="1"
                     CornerRadius="16">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
+                    <DockPanel DockPanel.Dock="Top"
                                Margin="4,4,4,12"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="归档列表" />
+                               LastChildFill="False">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Text="归档列表" />
+                        <Button DockPanel.Dock="Right"
+                                Width="110"
+                                Padding="12,8"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding RefreshCommand}"
+                                Content="刷新" />
+                    </DockPanel>
                     <ListView ItemsSource="{Binding Sessions}"
                               SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
                               SelectionMode="Single"
@@ -559,9 +557,21 @@
                             IsEnabled="{Binding CanDeleteSelectedSession}" />
                 </StackPanel>
 
-                <TextBlock VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Text="{Binding StatusText}" />
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Text="{Binding StatusText}" />
+                    <TextBox Width="320"
+                             Margin="152,0,0,0"
+                             Padding="10,6"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="12,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Text="（输入文字进行过滤）" />
+                </StackPanel>
             </DockPanel>
         </Border>
     </Grid>
