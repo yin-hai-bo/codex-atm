@@ -13,7 +13,10 @@
         MinWidth="1100"
         MinHeight="720"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource WindowBackgroundBrush}">
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        Background="Transparent">
     <Window.Resources>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <local:NullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" Invert="True" />
@@ -227,14 +230,62 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="WindowCloseButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DangerBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DangerHoverBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource WindowBackgroundBrush}">
+    <Border Margin="18"
+            Background="{DynamicResource WindowBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="0">
+    <Grid x:Name="WindowRootGrid"
+          Background="{DynamicResource WindowBackgroundBrush}"
+          PreviewMouseLeftButtonDown="WindowRootGrid_PreviewMouseLeftButtonDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+
+        <Button x:Name="CloseWindowButton"
+                Margin="0,14,14,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Style="{StaticResource WindowCloseButtonStyle}"
+                Click="CloseWindowButton_Click"
+                Content="×" />
 
         <Border Margin="20,20,20,12"
                 Padding="20"
@@ -245,7 +296,8 @@
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontSize="24"
+                        <TextBlock x:Name="AppTitleTextBlock"
+                                   FontSize="24"
                                    FontWeight="SemiBold"
                                    Style="{StaticResource ClickableTitleStyle}"
                                    MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
@@ -265,6 +317,7 @@
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right"
+                            Margin="0,0,44,0"
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
                     <ComboBox Width="140"
@@ -285,7 +338,8 @@
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0"
+            <Border x:Name="SessionListPanel"
+                    Grid.Column="0"
                     Padding="12"
                     Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource BorderBrush}"
@@ -423,7 +477,8 @@
                 </DockPanel>
             </Border>
 
-            <Border Grid.Column="2"
+            <Border x:Name="SessionDetailPanel"
+                    Grid.Column="2"
                     Padding="18"
                     Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource BorderBrush}"
@@ -532,7 +587,8 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="2"
+        <Border x:Name="BottomStatusPanel"
+                Grid.Row="2"
                 Margin="20,0,20,20"
                 Padding="16,12"
                 Background="{DynamicResource SurfaceBrush}"
@@ -575,4 +631,5 @@
             </DockPanel>
         </Border>
     </Grid>
+    </Border>
 </Window>

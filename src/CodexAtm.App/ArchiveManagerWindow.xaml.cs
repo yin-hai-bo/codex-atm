@@ -1,7 +1,12 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
@@ -40,6 +45,28 @@ public partial class ArchiveManagerWindow : Window
     private void AppTitle_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         ShowAboutDialog();
+        e.Handled = true;
+    }
+
+    private void CloseWindowButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void WindowRootGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left || e.ClickCount > 1)
+        {
+            return;
+        }
+
+        if (e.OriginalSource is not DependencyObject dependencyObject || !CanStartWindowDrag(dependencyObject))
+        {
+            return;
+        }
+
+        DragMove();
+        e.Handled = true;
     }
 
     private void DeleteSelectedSession(DeletionMode deletionMode, string message)
@@ -104,5 +131,59 @@ public partial class ArchiveManagerWindow : Window
         };
 
         aboutWindow.ShowDialog();
+    }
+
+    private bool CanStartWindowDrag(DependencyObject source)
+    {
+        return !HasAncestor(source, AppTitleTextBlock)
+            && !HasAncestor(source, SessionListPanel)
+            && !HasAncestor(source, SessionDetailPanel)
+            && !HasAncestor(source, BottomStatusPanel)
+            && !IsInteractiveElement(source);
+    }
+
+    private static bool HasAncestor(DependencyObject source, DependencyObject target)
+    {
+        for (var current = source; current is not null; current = GetParent(current))
+        {
+            if (ReferenceEquals(current, target))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsInteractiveElement(DependencyObject source)
+    {
+        for (var current = source; current is not null; current = GetParent(current))
+        {
+            if (current is ButtonBase
+                or TextBoxBase
+                or ComboBox
+                or ListView
+                or ListViewItem
+                or ScrollViewer
+                or Expander
+                or Selector
+                or Thumb)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject source)
+    {
+        return source switch
+        {
+            Visual visual => VisualTreeHelper.GetParent(visual),
+            Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+            FrameworkContentElement frameworkContentElement => frameworkContentElement.Parent,
+            _ => null
+        };
     }
 }
