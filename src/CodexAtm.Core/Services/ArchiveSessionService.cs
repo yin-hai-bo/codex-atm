@@ -25,7 +25,9 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         return Directory
             .EnumerateFiles(_archivedSessionsDirectory, "*.jsonl", SearchOption.TopDirectoryOnly)
             .Select(filePath => CreateSummary(filePath, threadTitles))
-            .OrderByDescending(item => item.LastWriteTime)
+            .OrderBy(item => item.GroupDisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(item => item.LastWriteTime)
+            .ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 

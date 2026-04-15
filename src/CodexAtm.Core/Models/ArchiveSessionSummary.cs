@@ -40,5 +40,17 @@ public sealed class ArchiveSessionSummary
 
     public string GroupDisplayName => string.IsNullOrWhiteSpace(Cwd)
         ? UngroupedLabel
-        : Cwd;
+        : GetLastDirectoryName(Cwd);
+
+    private static string GetLastDirectoryName(string cwd)
+    {
+        var trimmed = cwd.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (trimmed.Length == 0)
+        {
+            return cwd.Trim();
+        }
+
+        var directoryName = Path.GetFileName(trimmed);
+        return string.IsNullOrWhiteSpace(directoryName) ? trimmed : directoryName;
+    }
 }

@@ -133,11 +133,11 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void SessionSummary_UsesCwdAsGroupDisplayName()
+    public void SessionSummary_UsesLastDirectoryNameAsGroupDisplayName()
     {
         var summary = CreateSummary("a.jsonl", @"C:\work\billing", "alpha task");
 
-        Assert.Equal(@"C:\work\billing", summary.GroupDisplayName);
+        Assert.Equal("billing", summary.GroupDisplayName);
     }
 
     [Fact]

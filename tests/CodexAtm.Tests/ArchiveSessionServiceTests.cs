@@ -189,6 +189,52 @@ public sealed class ArchiveSessionServiceTests : IDisposable
     }
 
     [Fact]
+    public void GetSessions_SortsByGroupNameAscendingThenLastWriteTimeDescending()
+    {
+        var alphaOldPath = WriteArchiveFile(
+            "alpha-old.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-10","cwd":"C:\\work\\alpha","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            """);
+        var zetaNewPath = WriteArchiveFile(
+            "zeta-new.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-11","cwd":"C:\\work\\zeta","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            """);
+        var alphaNewPath = WriteArchiveFile(
+            "alpha-new.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-12","cwd":"C:\\work\\alpha","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            """);
+
+        File.SetLastWriteTimeUtc(alphaOldPath, new DateTime(2026, 4, 8, 3, 45, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(zetaNewPath, new DateTime(2026, 4, 8, 3, 47, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(alphaNewPath, new DateTime(2026, 4, 8, 3, 46, 0, DateTimeKind.Utc));
+
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+
+        var sessions = service.GetSessions();
+
+        Assert.Collection(
+            sessions,
+            session =>
+            {
+                Assert.Equal("alpha", session.GroupDisplayName);
+                Assert.Equal("alpha-new.jsonl", session.FileName);
+            },
+            session =>
+            {
+                Assert.Equal("alpha", session.GroupDisplayName);
+                Assert.Equal("alpha-old.jsonl", session.FileName);
+            },
+            session =>
+            {
+                Assert.Equal("zeta", session.GroupDisplayName);
+                Assert.Equal("zeta-new.jsonl", session.FileName);
+            });
+    }
+
+    [Fact]
     public void DeleteSession_Permanent_RemovesFile()
     {
         var filePath = WriteArchiveFile("delete.jsonl", """{"type":"session_meta","payload":{"id":"session-4"}}""");
