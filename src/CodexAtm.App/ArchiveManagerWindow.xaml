@@ -376,13 +376,27 @@
                                                    FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextStrongBrush}"
                                                    TextTrimming="CharacterEllipsis" />
-                                        <Border Grid.Column="1"
-                                                Padding="8,4"
-                                                Background="{DynamicResource AccentSurfaceBrush}"
-                                                CornerRadius="999">
-                                            <TextBlock Foreground="{DynamicResource AccentTextBrush}"
-                                                       Text="{Binding ParseStatus}" />
-                                        </Border>
+                                        <Ellipse Grid.Column="1"
+                                                 Width="10"
+                                                 Height="10"
+                                                 Margin="12,4,0,0"
+                                                 VerticalAlignment="Top"
+                                                 HorizontalAlignment="Center"
+                                                 Fill="{DynamicResource ParseSuccessBrush}">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{DynamicResource ParseSuccessBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ParseStatus}" Value="{x:Static model:ArchiveParseStatus.Partial}">
+                                                            <Setter Property="Fill" Value="{DynamicResource ParsePartialBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ParseStatus}" Value="{x:Static model:ArchiveParseStatus.Failed}">
+                                                            <Setter Property="Fill" Value="{DynamicResource ParseFailedBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
 
                                         <TextBlock Grid.Row="1"
                                                    Grid.ColumnSpan="2"

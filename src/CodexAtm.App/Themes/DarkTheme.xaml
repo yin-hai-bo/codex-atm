@@ -25,6 +25,9 @@
     <SolidColorBrush x:Key="DisabledBackgroundBrush" Color="#1A2230" />
     <SolidColorBrush x:Key="DisabledForegroundBrush" Color="#6E8098" />
     <SolidColorBrush x:Key="DisabledBorderBrush" Color="#253143" />
+    <SolidColorBrush x:Key="ParseSuccessBrush" Color="#4ADE80" />
+    <SolidColorBrush x:Key="ParsePartialBrush" Color="#FBBF24" />
+    <SolidColorBrush x:Key="ParseFailedBrush" Color="#FB7185" />
     <SolidColorBrush x:Key="DangerBrush" Color="#C43A4D" />
     <SolidColorBrush x:Key="DangerForegroundBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="DangerHoverBrush" Color="#D14B5D" />
