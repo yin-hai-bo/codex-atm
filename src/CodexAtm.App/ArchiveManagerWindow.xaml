@@ -26,6 +26,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBoxItem">
@@ -55,12 +56,14 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="ItemContainerStyle" Value="{StaticResource ThemeComboBoxItemStyle}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
                         <Grid>
                             <ToggleButton ClickMode="Press"
+                                          Cursor="Hand"
                                           Focusable="False"
                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                 <ToggleButton.Template>
@@ -105,6 +108,7 @@
                                             <Trigger Property="IsEnabled" Value="False">
                                                 <Setter TargetName="MainBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
                                                 <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
+                                                <Setter Property="Cursor" Value="Arrow" />
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -134,6 +138,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -165,6 +170,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -187,6 +193,7 @@
                                 <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
                                 <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
                                 <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -200,6 +207,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -224,6 +232,7 @@
                                 <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DisabledBackgroundBrush}" />
                                 <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource DisabledBorderBrush}" />
                                 <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+                                <Setter Property="Cursor" Value="Arrow" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -240,6 +249,7 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -259,6 +269,9 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource DangerHoverBrush}" />
                                 <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Cursor" Value="Arrow" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
