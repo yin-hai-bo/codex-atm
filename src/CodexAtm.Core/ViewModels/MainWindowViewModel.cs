@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CodexAtm.Core.Localization;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 
@@ -9,23 +10,42 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly IArchiveSessionService _archiveSessionService;
     private readonly RelayCommand _refreshCommand;
     private string _searchText = string.Empty;
-    private string _statusText = "已归档线程数：0";
+    private string _statusText = CoreText.ArchivedSessionCount(0);
     private ArchiveSessionSummary? _selectedSession;
     private ArchiveSessionDetail? _selectedSessionDetail;
     private ThemeMode _selectedThemeMode;
+    private LanguageMode _selectedLanguageMode;
     private bool _isBusy;
     private IReadOnlyList<ArchiveSessionSummary> _allSessions = [];
 
-    public MainWindowViewModel(IArchiveSessionService archiveSessionService, ThemeMode initialThemeMode = ThemeMode.System)
+    public MainWindowViewModel(
+        IArchiveSessionService archiveSessionService,
+        ThemeMode initialThemeMode = ThemeMode.System,
+        LanguageMode initialLanguageMode = LanguageMode.System)
     {
         _archiveSessionService = archiveSessionService;
         _refreshCommand = new RelayCommand(Refresh, () => !IsBusy);
         _selectedThemeMode = initialThemeMode;
+        _selectedLanguageMode = initialLanguageMode;
+        ThemeModes =
+        [
+            new ThemeModeOption(ThemeMode.System),
+            new ThemeModeOption(ThemeMode.Light),
+            new ThemeModeOption(ThemeMode.Dark)
+        ];
+        LanguageModes =
+        [
+            new LanguageModeOption(LanguageMode.System),
+            new LanguageModeOption(LanguageMode.SimplifiedChinese),
+            new LanguageModeOption(LanguageMode.English)
+        ];
     }
 
     public ObservableCollection<ArchiveSessionSummary> Sessions { get; } = [];
 
-    public IReadOnlyList<ThemeModeOption> ThemeModes { get; } = ThemeModeOption.DefaultOptions;
+    public IReadOnlyList<ThemeModeOption> ThemeModes { get; }
+
+    public IReadOnlyList<LanguageModeOption> LanguageModes { get; }
 
     public RelayCommand RefreshCommand => _refreshCommand;
 
@@ -88,7 +108,53 @@ public sealed class MainWindowViewModel : ObservableObject
     public ThemeMode SelectedThemeMode
     {
         get => _selectedThemeMode;
-        set => SetProperty(ref _selectedThemeMode, value);
+        set
+        {
+            if (SetProperty(ref _selectedThemeMode, value))
+            {
+                OnPropertyChanged(nameof(SelectedThemeOption));
+            }
+        }
+    }
+
+    public LanguageMode SelectedLanguageMode
+    {
+        get => _selectedLanguageMode;
+        set
+        {
+            if (SetProperty(ref _selectedLanguageMode, value))
+            {
+                OnPropertyChanged(nameof(SelectedLanguageOption));
+            }
+        }
+    }
+
+    public ThemeModeOption? SelectedThemeOption
+    {
+        get => ThemeModes.FirstOrDefault(item => item.Mode == SelectedThemeMode);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            SelectedThemeMode = value.Mode;
+        }
+    }
+
+    public LanguageModeOption? SelectedLanguageOption
+    {
+        get => LanguageModes.FirstOrDefault(item => item.Mode == SelectedLanguageMode);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            SelectedLanguageMode = value.Mode;
+        }
     }
 
     public bool CanDeleteSelectedSession => !IsBusy && SelectedSession is not null;
@@ -128,6 +194,25 @@ public sealed class MainWindowViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    public void RefreshLocalizedText()
+    {
+        foreach (var themeMode in ThemeModes)
+        {
+            themeMode.RefreshLocalizedText();
+        }
+
+        foreach (var languageMode in LanguageModes)
+        {
+            languageMode.RefreshLocalizedText();
+        }
+
+        UpdateStatusText(SearchText.Trim());
+        OnPropertyChanged(nameof(SelectedThemeOption));
+        OnPropertyChanged(nameof(SelectedLanguageOption));
+        OnPropertyChanged(nameof(SelectedSession));
+        OnPropertyChanged(nameof(SelectedSessionDetail));
     }
 
     private void LoadSelectedSessionDetail()
@@ -182,7 +267,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private void UpdateStatusText(string keyword)
     {
         StatusText = string.IsNullOrWhiteSpace(keyword)
-            ? $"已归档线程数：{Sessions.Count}"
-            : $"符合过滤条件的线程数：{Sessions.Count}";
+            ? CoreText.ArchivedSessionCount(Sessions.Count)
+            : CoreText.FilteredSessionCount(Sessions.Count);
     }
 }

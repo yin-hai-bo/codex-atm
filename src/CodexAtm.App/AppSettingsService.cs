@@ -23,24 +23,51 @@ public sealed class AppSettingsService
 
     public ThemeMode LoadThemeMode()
     {
+        return LoadSettings().ThemeMode;
+    }
+
+    public LanguageMode LoadLanguageMode()
+    {
+        return LoadSettings().LanguageMode;
+    }
+
+    public void SaveThemeMode(ThemeMode themeMode)
+    {
+        var settings = LoadSettings() with
+        {
+            ThemeMode = themeMode
+        };
+        SaveSettings(settings);
+    }
+
+    public void SaveLanguageMode(LanguageMode languageMode)
+    {
+        var settings = LoadSettings() with
+        {
+            LanguageMode = languageMode
+        };
+        SaveSettings(settings);
+    }
+
+    private AppSettings LoadSettings()
+    {
         try
         {
             if (!File.Exists(_settingsFilePath))
             {
-                return ThemeMode.System;
+                return new AppSettings();
             }
 
             var json = File.ReadAllText(_settingsFilePath);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json);
-            return settings?.ThemeMode ?? ThemeMode.System;
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
         catch
         {
-            return ThemeMode.System;
+            return new AppSettings();
         }
     }
 
-    public void SaveThemeMode(ThemeMode themeMode)
+    private void SaveSettings(AppSettings settings)
     {
         var directory = Path.GetDirectoryName(_settingsFilePath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -48,9 +75,14 @@ public sealed class AppSettingsService
             Directory.CreateDirectory(directory);
         }
 
-        var json = JsonSerializer.Serialize(new AppSettings(themeMode), SerializerOptions);
+        var json = JsonSerializer.Serialize(settings, SerializerOptions);
         File.WriteAllText(_settingsFilePath, json);
     }
 
-    private sealed record AppSettings(ThemeMode ThemeMode);
+    private sealed record AppSettings
+    {
+        public ThemeMode ThemeMode { get; init; } = ThemeMode.System;
+
+        public LanguageMode LanguageMode { get; init; } = LanguageMode.System;
+    }
 }

@@ -3,17 +3,17 @@ using CodexAtm.Core.ViewModels;
 
 namespace CodexAtm.Core.Models;
 
-public sealed class ThemeModeOption : ObservableObject
+public sealed class LanguageModeOption : ObservableObject
 {
     private string _displayName;
 
-    public ThemeModeOption(ThemeMode mode)
+    public LanguageModeOption(LanguageMode mode)
     {
         Mode = mode;
         _displayName = GetDisplayName(mode);
     }
 
-    public ThemeMode Mode { get; }
+    public LanguageMode Mode { get; }
 
     public string DisplayName
     {
@@ -26,14 +26,14 @@ public sealed class ThemeModeOption : ObservableObject
         DisplayName = GetDisplayName(Mode);
     }
 
-    private static string GetDisplayName(ThemeMode mode)
+    private static string GetDisplayName(LanguageMode mode)
     {
         return mode switch
         {
-            ThemeMode.System => CoreText.ThemeModeSystem,
-            ThemeMode.Light => CoreText.ThemeModeLight,
-            ThemeMode.Dark => CoreText.ThemeModeDark,
-            _ => CoreText.ThemeModeSystem
+            LanguageMode.System => CoreText.LanguageModeSystem,
+            LanguageMode.SimplifiedChinese => CoreText.LanguageModeSimplifiedChinese,
+            LanguageMode.English => CoreText.LanguageModeEnglish,
+            _ => CoreText.LanguageModeSystem
         };
     }
 }

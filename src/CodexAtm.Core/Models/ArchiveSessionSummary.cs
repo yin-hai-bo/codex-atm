@@ -1,8 +1,10 @@
+using CodexAtm.Core.Localization;
+
 namespace CodexAtm.Core.Models;
 
 public sealed class ArchiveSessionSummary
 {
-    public const string UngroupedLabel = "未分组";
+    public static string UngroupedLabel => CoreText.UngroupedLabel;
 
     public required string FilePath { get; init; }
 

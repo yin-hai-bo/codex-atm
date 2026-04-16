@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CodexAtm.App"
         mc:Ignorable="d"
-        Title="关于"
+        Title="{Binding WindowTitle, RelativeSource={RelativeSource Self}}"
         Width="540"
         Height="420"
         MinWidth="540"
@@ -107,10 +108,10 @@
                         <TextBlock FontSize="24"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="Codex 归档线程管理" />
+                                   Text="{Binding ProductName, RelativeSource={RelativeSource AncestorType=Window}}" />
                         <TextBlock Margin="0,6,0,0"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Text="查看、预览并管理本机 Codex App 的归档线程" />
+                                   Text="{Binding AboutWindowDescription, RelativeSource={RelativeSource AncestorType=Window}}" />
                     </StackPanel>
                 </Grid>
 
@@ -129,7 +130,7 @@
 
                     <TextBlock VerticalAlignment="Center"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="版本号" />
+                               Text="{Binding VersionLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <TextBlock Grid.Column="1"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextPrimaryBrush}"
@@ -138,20 +139,20 @@
                     <TextBlock Grid.Row="2"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="Git Commit ID" />
+                               Text="{Binding GitCommitIdLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <TextBlock Grid.Row="2"
                                Grid.Column="1"
                                VerticalAlignment="Center"
                                FontFamily="Consolas"
                                Style="{StaticResource ClickableTextStyle}"
                                MouseLeftButtonUp="CommitId_MouseLeftButtonUp"
-                               ToolTip="单击复制"
+                               ToolTip="{Binding CopyOnClickToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
                                Text="{Binding CommitId, Mode=OneWay}" />
 
                     <TextBlock Grid.Row="4"
                                VerticalAlignment="Top"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="仓库地址" />
+                               Text="{Binding RepositoryLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <TextBlock Grid.Row="4"
                                Grid.Column="1"
                                VerticalAlignment="Top"
@@ -170,7 +171,7 @@
                         IsDefault="True"
                         IsCancel="True"
                         Click="CloseButton_Click"
-                        Content="关闭" />
+                        Content="{Binding CloseButtonText, RelativeSource={RelativeSource AncestorType=Window}}" />
             </Grid>
         </Border>
 
@@ -185,7 +186,7 @@
                 Visibility="Collapsed">
             <TextBlock x:Name="ToastText"
                        Foreground="{DynamicResource SurfaceBrush}"
-                       Text="已复制到剪贴板" />
+                       Text="{Binding DefaultToastText, RelativeSource={RelativeSource AncestorType=Window}}" />
         </Border>
     </Grid>
 </Window>

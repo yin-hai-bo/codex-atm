@@ -3,14 +3,16 @@ using System.Windows.Input;
 using System.Windows;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using System.ComponentModel;
 
 namespace CodexAtm.App;
 
-public partial class AboutWindow : Window
+public partial class AboutWindow : Window, INotifyPropertyChanged
 {
     private const double ToastOffsetY = 10;
     private const double ToastHorizontalPadding = 12;
     private const double ToastVerticalPadding = 12;
+    private readonly LocalizationService _localizationService;
     private readonly DispatcherTimer _toastTimer = new()
     {
         Interval = TimeSpan.FromSeconds(1.6)
@@ -19,15 +21,37 @@ public partial class AboutWindow : Window
     public AboutWindow()
     {
         InitializeComponent();
+        _localizationService = ((App)Application.Current).LocalizationService;
         DataContext = this;
+        _localizationService.LanguageChanged += LocalizationServiceOnLanguageChanged;
         _toastTimer.Tick += ToastTimer_Tick;
     }
 
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string WindowTitle => AppText.AboutWindowTitle;
+
+    public string ProductName => AppText.ProductName;
+
+    public string AboutWindowDescription => AppText.AboutWindowDescription;
+
     public string DisplayVersion => AppVersionInfo.DisplayVersion;
+
+    public string VersionLabel => AppText.AboutVersionLabel;
+
+    public string GitCommitIdLabel => AppText.GitCommitIdLabel;
 
     public string CommitId => AssemblyBuildInfo.CommitId;
 
+    public string CopyOnClickToolTip => AppText.CopyOnClickToolTip;
+
     public string RepositoryUrl => AssemblyBuildInfo.RepositoryUrl;
+
+    public string RepositoryLabel => AppText.RepositoryLabel;
+
+    public string CloseButtonText => AppText.CloseButton;
+
+    public string DefaultToastText => AppText.CopiedToClipboard;
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
@@ -39,13 +63,13 @@ public partial class AboutWindow : Window
         try
         {
             Clipboard.SetText(CommitId);
-            ShowToast("Commit ID 已复制到剪贴板", e.GetPosition(RootGrid));
+            ShowToast(AppText.CommitCopiedToClipboard, e.GetPosition(RootGrid));
         }
         catch (Exception ex)
         {
             MessageBox.Show(
-                $"复制失败：{ex.Message}",
-                "复制失败",
+                AppText.CopyFailed(ex.Message),
+                AppText.CopyFailedTitle,
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -94,10 +118,29 @@ public partial class AboutWindow : Window
         ToastBorder.Opacity = 0;
     }
 
+    private void LocalizationServiceOnLanguageChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(WindowTitle));
+        OnPropertyChanged(nameof(ProductName));
+        OnPropertyChanged(nameof(AboutWindowDescription));
+        OnPropertyChanged(nameof(VersionLabel));
+        OnPropertyChanged(nameof(GitCommitIdLabel));
+        OnPropertyChanged(nameof(CopyOnClickToolTip));
+        OnPropertyChanged(nameof(RepositoryLabel));
+        OnPropertyChanged(nameof(CloseButtonText));
+        OnPropertyChanged(nameof(DefaultToastText));
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _toastTimer.Stop();
         _toastTimer.Tick -= ToastTimer_Tick;
+        _localizationService.LanguageChanged -= LocalizationServiceOnLanguageChanged;
         base.OnClosed(e);
+    }
+
+    private void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

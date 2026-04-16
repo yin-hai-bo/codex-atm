@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Runtime.InteropServices;
+using CodexAtm.Core.Localization;
 using CodexAtm.Core.Models;
 using Microsoft.VisualBasic.FileIO;
 using SearchOption = System.IO.SearchOption;
@@ -52,7 +53,7 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         var validatedPath = ValidateSessionPath(filePath);
         if (!File.Exists(validatedPath))
         {
-            throw new FileNotFoundException("归档文件不存在。", validatedPath);
+            throw new FileNotFoundException(CoreText.ArchivedFileNotFound, validatedPath);
         }
 
         if (deletionMode == DeletionMode.RecycleBin)
@@ -102,7 +103,7 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
     {
         if (!File.Exists(filePath))
         {
-            return ArchiveParseResult.Failed("文件不存在。");
+            return ArchiveParseResult.Failed(CoreText.FileNotFound);
         }
 
         try
@@ -156,19 +157,19 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
-            throw new ArgumentException("文件路径不能为空。", nameof(filePath));
+            throw new ArgumentException(CoreText.FilePathCannotBeEmpty, nameof(filePath));
         }
 
         var normalizedPath = Path.GetFullPath(filePath);
         var root = EnsureTrailingSeparator(_archivedSessionsDirectory);
         if (!normalizedPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("只允许操作 archived_sessions 目录下的文件。");
+            throw new InvalidOperationException(CoreText.OnlyArchivedSessionsAllowed);
         }
 
         if (!string.Equals(Path.GetExtension(normalizedPath), ".jsonl", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("只允许操作 .jsonl 归档文件。");
+            throw new InvalidOperationException(CoreText.OnlyJsonlAllowed);
         }
 
         return normalizedPath;
@@ -178,7 +179,7 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            throw new ArgumentException("归档目录不能为空。", nameof(path));
+            throw new ArgumentException(CoreText.ArchiveDirectoryCannotBeEmpty, nameof(path));
         }
 
         return Path.GetFullPath(path);
@@ -435,13 +436,13 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         {
             if (!_hasStructuredData)
             {
-                return ArchiveParseResult.Failed(_hasLineErrors ? "文件内容无法解析。" : "文件为空或缺少可识别数据。");
+                return ArchiveParseResult.Failed(_hasLineErrors ? CoreText.FileCannotBeParsed : CoreText.FileEmptyOrMissingData);
             }
 
             var status = _hasLineErrors ? ArchiveParseStatus.Partial : ArchiveParseStatus.Success;
             return new ArchiveParseResult(
                 status,
-                _hasLineErrors ? "部分行解析失败。" : string.Empty,
+                _hasLineErrors ? CoreText.PartialLineParseFailed : string.Empty,
                 SessionId,
                 Cwd,
                 Originator,

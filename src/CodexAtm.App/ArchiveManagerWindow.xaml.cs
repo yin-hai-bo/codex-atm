@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,39 +6,86 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.ComponentModel;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
 
 namespace CodexAtm.App;
 
-public partial class ArchiveManagerWindow : Window
+public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
 {
     private readonly MainWindowViewModel _viewModel;
+    private readonly LocalizationService _localizationService;
     private readonly ThemeService _themeService;
 
     public ArchiveManagerWindow()
     {
         InitializeComponent();
         _themeService = ((App)Application.Current).ThemeService;
+        _localizationService = ((App)Application.Current).LocalizationService;
         _viewModel = new MainWindowViewModel(
             new ArchiveSessionService(GetArchivedSessionsDirectory()),
-            _themeService.CurrentThemeMode);
+            _themeService.CurrentThemeMode,
+            _localizationService.CurrentLanguageMode);
         DataContext = _viewModel;
         ConfigureSessionGrouping();
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        _localizationService.LanguageChanged += LocalizationServiceOnLanguageChanged;
         Loaded += (_, _) => _viewModel.Refresh();
-        Closed += (_, _) => _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+        Closed += (_, _) =>
+        {
+            _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
+            _localizationService.LanguageChanged -= LocalizationServiceOnLanguageChanged;
+        };
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string WindowTitle => AppVersionInfo.WindowTitle;
+
+    public string ProductName => AppText.ProductName;
+
+    public string MainWindowDescription => AppText.MainWindowDescription;
+
+    public string CloseApplicationToolTip => AppText.CloseApplicationToolTip;
+
+    public string SessionListTitle => AppText.SessionListTitle;
+
+    public string RefreshButtonText => AppText.RefreshButton;
+
+    public string NoSessionSelectedText => AppText.NoSessionSelected;
+
+    public string DetailPreviewTitle => AppText.DetailPreviewTitle;
+
+    public string SessionIdLabel => AppText.SessionIdLabel;
+
+    public string FilePathLabel => AppText.FilePathLabel;
+
+    public string WorkingDirectoryLabel => AppText.WorkingDirectoryLabel;
+
+    public string LastModifiedLabel => AppText.LastModifiedLabel;
+
+    public string FileSizeLabel => AppText.FileSizeLabel;
+
+    public string SourceLabel => AppText.SourceLabel;
+
+    public string RecentMessagesTitle => AppText.RecentMessagesTitle;
+
+    public string MoveToRecycleBinButtonText => AppText.MoveToRecycleBinButton;
+
+    public string DeletePermanentlyButtonText => AppText.DeletePermanentlyButton;
+
+    public string FilterHintText => AppText.FilterHint;
 
     private void RecycleSelectedSession_Click(object sender, RoutedEventArgs e)
     {
-        DeleteSelectedSession(DeletionMode.RecycleBin, "确定要将所选归档线程移到回收站吗？");
+        DeleteSelectedSession(DeletionMode.RecycleBin, AppText.ConfirmRecycleMessage);
     }
 
     private void DeleteSelectedSession_Click(object sender, RoutedEventArgs e)
     {
-        DeleteSelectedSession(DeletionMode.Permanent, "确定要永久删除所选归档线程吗？此操作不可恢复。");
+        DeleteSelectedSession(DeletionMode.Permanent, AppText.ConfirmPermanentDeleteMessage);
     }
 
     private void AppTitle_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -78,7 +124,7 @@ public partial class ArchiveManagerWindow : Window
 
         var result = MessageBox.Show(
             message,
-            "确认删除",
+            AppText.ConfirmDeleteTitle,
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning,
             MessageBoxResult.No);
@@ -93,7 +139,7 @@ public partial class ArchiveManagerWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "删除失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, AppText.DeleteFailedTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -103,6 +149,18 @@ public partial class ArchiveManagerWindow : Window
         {
             _themeService.SetThemeMode(_viewModel.SelectedThemeMode);
         }
+
+        if (e.PropertyName == nameof(MainWindowViewModel.SelectedLanguageMode))
+        {
+            _localizationService.SetLanguageMode(_viewModel.SelectedLanguageMode);
+        }
+    }
+
+    private void LocalizationServiceOnLanguageChanged(object? sender, EventArgs e)
+    {
+        _viewModel.RefreshLocalizedText();
+        CollectionViewSource.GetDefaultView(_viewModel.Sessions).Refresh();
+        RaiseLocalizedPropertyChanges();
     }
 
     private void ConfigureSessionGrouping()
@@ -185,5 +243,32 @@ public partial class ArchiveManagerWindow : Window
             FrameworkContentElement frameworkContentElement => frameworkContentElement.Parent,
             _ => null
         };
+    }
+
+    private void RaiseLocalizedPropertyChanges()
+    {
+        OnPropertyChanged(nameof(WindowTitle));
+        OnPropertyChanged(nameof(ProductName));
+        OnPropertyChanged(nameof(MainWindowDescription));
+        OnPropertyChanged(nameof(CloseApplicationToolTip));
+        OnPropertyChanged(nameof(SessionListTitle));
+        OnPropertyChanged(nameof(RefreshButtonText));
+        OnPropertyChanged(nameof(NoSessionSelectedText));
+        OnPropertyChanged(nameof(DetailPreviewTitle));
+        OnPropertyChanged(nameof(SessionIdLabel));
+        OnPropertyChanged(nameof(FilePathLabel));
+        OnPropertyChanged(nameof(WorkingDirectoryLabel));
+        OnPropertyChanged(nameof(LastModifiedLabel));
+        OnPropertyChanged(nameof(FileSizeLabel));
+        OnPropertyChanged(nameof(SourceLabel));
+        OnPropertyChanged(nameof(RecentMessagesTitle));
+        OnPropertyChanged(nameof(MoveToRecycleBinButtonText));
+        OnPropertyChanged(nameof(DeletePermanentlyButtonText));
+        OnPropertyChanged(nameof(FilterHintText));
+    }
+
+    private void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

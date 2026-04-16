@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:CodexAtm.App"
         xmlns:model="clr-namespace:CodexAtm.Core.Models;assembly=CodexAtm.Core"
         mc:Ignorable="d"
-        Title="{x:Static local:AppVersionInfo.WindowTitle}"
+        Title="{Binding WindowTitle, RelativeSource={RelativeSource Self}}"
         Icon="Assets/CodexAtmIcon.ico"
         Width="1360"
         Height="860"
@@ -314,7 +314,7 @@
                                    FontWeight="SemiBold"
                                    Style="{StaticResource ClickableTitleStyle}"
                                    MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
-                                   Text="Codex 归档线程管理" />
+                                   Text="{Binding ProductName, RelativeSource={RelativeSource AncestorType=Window}}" />
                         <Border Margin="10,2,0,0"
                                 Padding="10,4"
                                 VerticalAlignment="Center"
@@ -326,18 +326,27 @@
                     </StackPanel>
                     <TextBlock Margin="0,6,0,0"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="查看、预览并删除本机 Codex App 的归档线程" />
+                               Text="{Binding MainWindowDescription, RelativeSource={RelativeSource AncestorType=Window}}" />
                 </StackPanel>
 
-                <ComboBox Grid.Column="1"
-                          Width="140"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Style="{StaticResource ThemeComboBoxStyle}"
-                          ItemsSource="{Binding ThemeModes}"
-                          DisplayMemberPath="DisplayName"
-                          SelectedValuePath="Mode"
-                          SelectedValue="{Binding SelectedThemeMode, Mode=TwoWay}" />
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <ComboBox Width="140"
+                              VerticalAlignment="Center"
+                              Style="{StaticResource ThemeComboBoxStyle}"
+                              ItemsSource="{Binding ThemeModes}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedItem="{Binding SelectedThemeOption, Mode=TwoWay}" />
+                    <ComboBox Width="150"
+                              Margin="12,0,0,0"
+                              VerticalAlignment="Center"
+                              Style="{StaticResource ThemeComboBoxStyle}"
+                              ItemsSource="{Binding LanguageModes}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedItem="{Binding SelectedLanguageOption, Mode=TwoWay}" />
+                </StackPanel>
 
                 <Grid Grid.Column="2"
                       VerticalAlignment="Center">
@@ -346,7 +355,7 @@
                             VerticalAlignment="Center"
                             Style="{StaticResource WindowCloseButtonStyle}"
                             Click="CloseWindowButton_Click"
-                            ToolTip="关闭本程序"
+                            ToolTip="{Binding CloseApplicationToolTip, RelativeSource={RelativeSource AncestorType=Window}}"
                             Content="×" />
                 </Grid>
             </Grid>
@@ -373,13 +382,13 @@
                         <TextBlock FontSize="18"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="归档列表" />
+                                   Text="{Binding SessionListTitle, RelativeSource={RelativeSource AncestorType=Window}}" />
                         <Button DockPanel.Dock="Right"
                                 Width="110"
                                 Padding="12,8"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 Command="{Binding RefreshCommand}"
-                                Content="刷新" />
+                                Content="{Binding RefreshButtonText, RelativeSource={RelativeSource AncestorType=Window}}" />
                     </DockPanel>
                     <ListView ItemsSource="{Binding Sessions}"
                               SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
@@ -510,7 +519,7 @@
                         <TextBlock VerticalAlignment="Center"
                                    HorizontalAlignment="Center"
                                    Foreground="{DynamicResource TextTertiaryBrush}"
-                                   Text="选择左侧归档线程后，这里会显示元信息与最近几条消息。" />
+                                   Text="{Binding NoSessionSelectedText, RelativeSource={RelativeSource AncestorType=Window}}" />
                     </Grid>
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -519,7 +528,7 @@
                             <TextBlock FontSize="18"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Text="详情预览" />
+                                       Text="{Binding DetailPreviewTitle, RelativeSource={RelativeSource AncestorType=Window}}" />
 
                             <Border Margin="0,14,0,16"
                                     Padding="14"
@@ -543,22 +552,22 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Text="线程 ID" />
+                                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SessionIdLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.SessionId}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondaryBrush}" Text="文件路径" />
+                                    <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding FilePathLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Row="1" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.FilePath}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="2" Foreground="{DynamicResource TextSecondaryBrush}" Text="工作目录" />
+                                    <TextBlock Grid.Row="2" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding WorkingDirectoryLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.Cwd}" TextWrapping="Wrap" />
 
-                                    <TextBlock Grid.Row="3" Foreground="{DynamicResource TextSecondaryBrush}" Text="修改时间" />
+                                    <TextBlock Grid.Row="3" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding LastModifiedLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.LastWriteTime}" />
 
-                                    <TextBlock Grid.Row="4" Foreground="{DynamicResource TextSecondaryBrush}" Text="文件大小" />
+                                    <TextBlock Grid.Row="4" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding FileSizeLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Summary.DisplayFileSize}" />
 
-                                    <TextBlock Grid.Row="5" Foreground="{DynamicResource TextSecondaryBrush}" Text="来源" />
+                                    <TextBlock Grid.Row="5" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SourceLabel, RelativeSource={RelativeSource AncestorType=Window}}" />
                                     <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{DynamicResource TextPrimaryBrush}" Text="{Binding SelectedSessionDetail.Source}" />
 
                                     <TextBlock Grid.Row="6" Foreground="{DynamicResource TextSecondaryBrush}" Text="Originator" />
@@ -572,7 +581,7 @@
                             <TextBlock FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Text="最近几条消息" />
+                                       Text="{Binding RecentMessagesTitle, RelativeSource={RelativeSource AncestorType=Window}}" />
 
                             <ItemsControl Margin="0,12,0,0"
                                           ItemsSource="{Binding SelectedSessionDetail.Messages}">
@@ -624,13 +633,13 @@
                             Padding="12,8"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Click="RecycleSelectedSession_Click"
-                            Content="移到回收站"
+                            Content="{Binding MoveToRecycleBinButtonText, RelativeSource={RelativeSource AncestorType=Window}}"
                             IsEnabled="{Binding CanDeleteSelectedSession}" />
                     <Button Width="130"
                             Padding="12,8"
                             Style="{StaticResource DangerButtonStyle}"
                             Click="DeleteSelectedSession_Click"
-                            Content="永久删除"
+                            Content="{Binding DeletePermanentlyButtonText, RelativeSource={RelativeSource AncestorType=Window}}"
                             IsEnabled="{Binding CanDeleteSelectedSession}" />
                 </StackPanel>
 
@@ -647,7 +656,7 @@
                     <TextBlock Margin="12,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextTertiaryBrush}"
-                               Text="（输入文字进行过滤）" />
+                               Text="{Binding FilterHintText, RelativeSource={RelativeSource AncestorType=Window}}" />
                 </StackPanel>
             </DockPanel>
         </Border>

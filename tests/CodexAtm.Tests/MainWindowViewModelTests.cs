@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
@@ -9,6 +10,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void Refresh_LoadsSessionsAndSelectsNothingByDefault()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
             [
                 CreateSummary("a.jsonl", @"C:\work\a", "alpha task"),
@@ -26,6 +28,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void SearchText_FiltersByPreviewAndCwd()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
             [
                 CreateSummary("a.jsonl", @"C:\work\billing", "alpha task"),
@@ -47,6 +50,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void SearchText_FiltersByDisplayTitle()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
             [
                 CreateSummary("a.jsonl", @"C:\work\billing", "alpha task", "从 index 读取的标题"),
@@ -64,6 +68,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void ClearingSearchText_RestoresArchivedCountStatusText()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
             [
                 CreateSummary("a.jsonl", @"C:\work\billing", "alpha task"),
@@ -82,6 +87,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void DeleteSelectedSession_UpdatesStatusText()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var first = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
         var second = CreateSummary("b.jsonl", @"C:\work\b", "beta task");
         var service = new FakeArchiveSessionService([first, second]);
@@ -98,6 +104,7 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void SelectedSession_LoadsDetail()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var summary = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
         var detail = new ArchiveSessionDetail
         {
@@ -123,18 +130,22 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void Constructor_UsesProvidedThemeMode()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService([]);
 
         var viewModel = new MainWindowViewModel(service, ThemeMode.Dark);
 
         Assert.Equal(ThemeMode.Dark, viewModel.SelectedThemeMode);
         Assert.Equal(3, viewModel.ThemeModes.Count);
+        Assert.Equal(LanguageMode.System, viewModel.SelectedLanguageMode);
+        Assert.Equal(3, viewModel.LanguageModes.Count);
         Assert.Equal("已归档线程数：0", viewModel.StatusText);
     }
 
     [Fact]
     public void SessionSummary_UsesLastDirectoryNameAsGroupDisplayName()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var summary = CreateSummary("a.jsonl", @"C:\work\billing", "alpha task");
 
         Assert.Equal("billing", summary.GroupDisplayName);
@@ -143,9 +154,49 @@ public sealed class MainWindowViewModelTests
     [Fact]
     public void SessionSummary_UsesUngroupedLabelWhenCwdMissing()
     {
+        using var _ = new UiCultureScope("zh-CN");
         var summary = CreateSummary("a.jsonl", string.Empty, "alpha task");
 
         Assert.Equal(ArchiveSessionSummary.UngroupedLabel, summary.GroupDisplayName);
+    }
+
+    [Fact]
+    public void ViewModel_UsesEnglishTextsWhenUiCultureIsEnglish()
+    {
+        using var _ = new UiCultureScope("en-US");
+        var service = new FakeArchiveSessionService(
+            [
+                CreateSummary("a.jsonl", @"C:\work\a", "alpha task")
+            ]);
+        var viewModel = new MainWindowViewModel(service, ThemeMode.Dark);
+
+        viewModel.Refresh();
+        viewModel.SearchText = "alpha";
+
+        Assert.Equal("Filtered threads: 1", viewModel.StatusText);
+        Assert.Equal("Ungrouped", CreateSummary("b.jsonl", string.Empty, "preview").GroupDisplayName);
+        Assert.Equal("System", viewModel.ThemeModes[0].DisplayName);
+        Assert.Equal("Light", viewModel.ThemeModes[1].DisplayName);
+        Assert.Equal("Dark", viewModel.ThemeModes[2].DisplayName);
+        Assert.Equal("System", viewModel.LanguageModes[0].DisplayName);
+        Assert.Equal("Simplified Chinese", viewModel.LanguageModes[1].DisplayName);
+        Assert.Equal("English", viewModel.LanguageModes[2].DisplayName);
+    }
+
+    [Fact]
+    public void RefreshLocalizedText_UpdatesLanguageOptions()
+    {
+        using var english = new UiCultureScope("en-US");
+        var service = new FakeArchiveSessionService([]);
+        var viewModel = new MainWindowViewModel(service, ThemeMode.System, LanguageMode.System);
+
+        using var chinese = new UiCultureScope("zh-CN");
+        viewModel.RefreshLocalizedText();
+
+        Assert.Equal("跟随系统", viewModel.LanguageModes[0].DisplayName);
+        Assert.Equal("简体中文", viewModel.LanguageModes[1].DisplayName);
+        Assert.Equal("英文", viewModel.LanguageModes[2].DisplayName);
+        Assert.Equal("已归档线程数：0", viewModel.StatusText);
     }
 
     private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview, string threadTitle = "")
@@ -185,6 +236,25 @@ public sealed class MainWindowViewModelTests
         public IReadOnlyList<ArchiveSessionSummary> GetSessions()
         {
             return _sessions.ToArray();
+        }
+    }
+
+    private sealed class UiCultureScope : IDisposable
+    {
+        private readonly CultureInfo _originalCulture = CultureInfo.CurrentCulture;
+        private readonly CultureInfo _originalUiCulture = CultureInfo.CurrentUICulture;
+
+        public UiCultureScope(string cultureName)
+        {
+            var culture = CultureInfo.GetCultureInfo(cultureName);
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+        }
+
+        public void Dispose()
+        {
+            CultureInfo.CurrentCulture = _originalCulture;
+            CultureInfo.CurrentUICulture = _originalUiCulture;
         }
     }
 }

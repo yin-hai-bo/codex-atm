@@ -2,7 +2,7 @@ namespace CodexAtm.App;
 
 public static class AppVersionInfo
 {
-    public const string ProductName = "Codex 归档线程管理";
+    public static string ProductName => AppText.ProductName;
 
     public static string Version { get; } =
         typeof(AppVersionInfo).Assembly.GetName().Version?.ToString()
