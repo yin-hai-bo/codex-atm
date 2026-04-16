@@ -8,10 +8,10 @@
         mc:Ignorable="d"
         Title="{Binding WindowTitle, RelativeSource={RelativeSource Self}}"
         Icon="Assets/CodexAtmIcon.ico"
-        Width="1360"
-        Height="860"
-        MinWidth="1100"
-        MinHeight="720"
+        Width="1310"
+        Height="820"
+        MinWidth="1060"
+        MinHeight="690"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -302,34 +302,26 @@
                 CornerRadius="16">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.15*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0.85*" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock x:Name="AppTitleTextBlock"
-                                   FontSize="24"
-                                   FontWeight="SemiBold"
-                                   Style="{StaticResource ClickableTitleStyle}"
-                                   MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
-                                   Text="{Binding ProductName, RelativeSource={RelativeSource AncestorType=Window}}" />
-                        <Border Margin="10,2,0,0"
-                                Padding="10,4"
-                                VerticalAlignment="Center"
-                                Background="{DynamicResource AccentSurfaceBrush}"
-                                CornerRadius="999">
-                            <TextBlock Foreground="{DynamicResource AccentTextBrush}"
-                                       Text="{x:Static local:AppVersionInfo.DisplayVersion}" />
-                        </Border>
-                    </StackPanel>
+                    <TextBlock x:Name="AppTitleTextBlock"
+                               FontSize="24"
+                               FontWeight="SemiBold"
+                               Style="{StaticResource ClickableTitleStyle}"
+                               MouseLeftButtonUp="AppTitle_MouseLeftButtonUp"
+                               Text="{Binding ProductName, RelativeSource={RelativeSource AncestorType=Window}}" />
                     <TextBlock Margin="0,6,0,0"
+                               MaxWidth="520"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="{Binding MainWindowDescription, RelativeSource={RelativeSource AncestorType=Window}}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
+                            Margin="100,0,0,0"
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
