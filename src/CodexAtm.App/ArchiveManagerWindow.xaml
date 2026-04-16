@@ -234,10 +234,10 @@
         <Style x:Key="WindowCloseButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="32" />
             <Setter Property="Height" Value="32" />
-            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
@@ -245,6 +245,8 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="ButtonBorder"
                                 Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="8">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
@@ -279,22 +281,20 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Button x:Name="CloseWindowButton"
-                Margin="0,14,14,0"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Style="{StaticResource WindowCloseButtonStyle}"
-                Click="CloseWindowButton_Click"
-                Content="×" />
-
         <Border Margin="20,20,20,12"
                 Padding="20"
                 Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16">
-            <DockPanel LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="AppTitleTextBlock"
                                    FontSize="24"
@@ -316,19 +316,27 @@
                                Text="查看、预览并删除本机 Codex App 的归档线程" />
                 </StackPanel>
 
-                <StackPanel DockPanel.Dock="Right"
-                            Margin="0,0,44,0"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Center">
-                    <ComboBox Width="140"
-                              Margin="0,0,12,0"
-                              Style="{StaticResource ThemeComboBoxStyle}"
-                              ItemsSource="{Binding ThemeModes}"
-                              DisplayMemberPath="DisplayName"
-                              SelectedValuePath="Mode"
-                              SelectedValue="{Binding SelectedThemeMode, Mode=TwoWay}" />
-                </StackPanel>
-            </DockPanel>
+                <ComboBox Grid.Column="1"
+                          Width="140"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Style="{StaticResource ThemeComboBoxStyle}"
+                          ItemsSource="{Binding ThemeModes}"
+                          DisplayMemberPath="DisplayName"
+                          SelectedValuePath="Mode"
+                          SelectedValue="{Binding SelectedThemeMode, Mode=TwoWay}" />
+
+                <Grid Grid.Column="2"
+                      VerticalAlignment="Center">
+                    <Button x:Name="CloseWindowButton"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource WindowCloseButtonStyle}"
+                            Click="CloseWindowButton_Click"
+                            ToolTip="关闭本程序"
+                            Content="×" />
+                </Grid>
+            </Grid>
         </Border>
 
         <Grid Grid.Row="1" Margin="20,0,20,12">
