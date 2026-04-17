@@ -400,7 +400,10 @@
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type GroupItem}">
-                                                    <Expander IsExpanded="True">
+                                                    <Expander Loaded="SessionGroupExpander_Loaded"
+                                                              Expanded="SessionGroupExpander_Expanded"
+                                                              Collapsed="SessionGroupExpander_Collapsed"
+                                                              IsExpanded="True">
                                                         <Expander.Header>
                                                             <Border Margin="0,6,0,12"
                                                                     Padding="12,8"

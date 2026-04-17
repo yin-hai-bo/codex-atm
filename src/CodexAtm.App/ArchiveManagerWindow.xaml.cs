@@ -9,6 +9,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.ComponentModel;
+using System.Collections.Generic;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
@@ -22,6 +23,7 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
     private readonly MainWindowViewModel _viewModel;
     private readonly LocalizationService _localizationService;
     private readonly ThemeService _themeService;
+    private readonly Dictionary<string, bool> _groupExpansionStates = new(StringComparer.OrdinalIgnoreCase);
     private nint _smallIconHandle;
     private nint _largeIconHandle;
 
@@ -188,6 +190,32 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
         view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ArchiveSessionSummary.GroupDisplayName)));
     }
 
+    private void SessionGroupExpander_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Expander expander || TryGetGroupKey(expander) is not { } groupKey)
+        {
+            return;
+        }
+
+        if (_groupExpansionStates.TryGetValue(groupKey, out var isExpanded))
+        {
+            expander.IsExpanded = isExpanded;
+            return;
+        }
+
+        _groupExpansionStates[groupKey] = expander.IsExpanded;
+    }
+
+    private void SessionGroupExpander_Expanded(object sender, RoutedEventArgs e)
+    {
+        UpdateGroupExpansionState(sender, isExpanded: true);
+    }
+
+    private void SessionGroupExpander_Collapsed(object sender, RoutedEventArgs e)
+    {
+        UpdateGroupExpansionState(sender, isExpanded: false);
+    }
+
     private static string GetArchivedSessionsDirectory()
     {
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -278,6 +306,23 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(MoveToRecycleBinButtonText));
         OnPropertyChanged(nameof(DeletePermanentlyButtonText));
         OnPropertyChanged(nameof(FilterHintText));
+    }
+
+    private void UpdateGroupExpansionState(object sender, bool isExpanded)
+    {
+        if (sender is not Expander expander || TryGetGroupKey(expander) is not { } groupKey)
+        {
+            return;
+        }
+
+        _groupExpansionStates[groupKey] = isExpanded;
+    }
+
+    private static string? TryGetGroupKey(Expander expander)
+    {
+        return expander.DataContext is CollectionViewGroup collectionViewGroup && collectionViewGroup.Name is not null
+            ? collectionViewGroup.Name.ToString()
+            : null;
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
