@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace CodexAtm.App;
 
@@ -21,7 +20,6 @@ public partial class App : Application
         var window = new ArchiveManagerWindow();
         MainWindow = window;
         ShutdownMode = ShutdownMode.OnMainWindowClose;
-        window.Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/CodexAtmIcon.ico", UriKind.Absolute));
         window.Show();
     }
 

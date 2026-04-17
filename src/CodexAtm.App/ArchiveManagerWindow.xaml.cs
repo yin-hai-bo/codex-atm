@@ -1,9 +1,11 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.ComponentModel;
@@ -15,9 +17,13 @@ namespace CodexAtm.App;
 
 public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
 {
+    private const int GCLP_HICON = -14;
+    private const int GCLP_HICONSM = -34;
     private readonly MainWindowViewModel _viewModel;
     private readonly LocalizationService _localizationService;
     private readonly ThemeService _themeService;
+    private nint _smallIconHandle;
+    private nint _largeIconHandle;
 
     public ArchiveManagerWindow()
     {
@@ -32,11 +38,13 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
         ConfigureSessionGrouping();
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         _localizationService.LanguageChanged += LocalizationServiceOnLanguageChanged;
+        SourceInitialized += OnSourceInitialized;
         Loaded += (_, _) => _viewModel.Refresh();
         Closed += (_, _) =>
         {
             _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
             _localizationService.LanguageChanged -= LocalizationServiceOnLanguageChanged;
+            ReleaseTaskbarIcons();
         };
     }
 
@@ -267,8 +275,85 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(FilterHintText));
     }
 
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        ApplyTaskbarIcon();
+    }
+
+    private void ApplyTaskbarIcon()
+    {
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            return;
+        }
+
+        var largeIcons = new nint[1];
+        var smallIcons = new nint[1];
+        if (ExtractIconEx(executablePath, 0, largeIcons, smallIcons, 1) == 0)
+        {
+            return;
+        }
+
+        var windowHandle = new WindowInteropHelper(this).Handle;
+        if (windowHandle == nint.Zero)
+        {
+            DestroyExtractedIcons(largeIcons[0], smallIcons[0]);
+            return;
+        }
+
+        ReleaseTaskbarIcons();
+        _largeIconHandle = largeIcons[0];
+        _smallIconHandle = smallIcons[0];
+
+        if (_smallIconHandle != nint.Zero)
+        {
+            SetClassLongPtr(windowHandle, GCLP_HICONSM, _smallIconHandle);
+        }
+
+        if (_largeIconHandle != nint.Zero)
+        {
+            SetClassLongPtr(windowHandle, GCLP_HICON, _largeIconHandle);
+        }
+    }
+
+    private void ReleaseTaskbarIcons()
+    {
+        DestroyExtractedIcons(_largeIconHandle, _smallIconHandle);
+        _largeIconHandle = nint.Zero;
+        _smallIconHandle = nint.Zero;
+    }
+
+    private static void DestroyExtractedIcons(nint largeIconHandle, nint smallIconHandle)
+    {
+        if (smallIconHandle != nint.Zero)
+        {
+            DestroyIcon(smallIconHandle);
+        }
+
+        if (largeIconHandle != nint.Zero)
+        {
+            DestroyIcon(largeIconHandle);
+        }
+    }
+
     private void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    [DllImport("shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode)]
+    private static extern uint ExtractIconEx(
+        string fileName,
+        int iconIndex,
+        [Out] nint[] largeIcons,
+        [Out] nint[] smallIcons,
+        uint iconCount);
+
+    [DllImport("user32.dll", EntryPoint = "SetClassLongPtrW", SetLastError = true)]
+    private static extern nint SetClassLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(nint hIcon);
 }
