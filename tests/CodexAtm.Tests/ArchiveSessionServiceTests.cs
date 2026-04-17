@@ -41,6 +41,44 @@ public sealed class ArchiveSessionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSessionsAsync_ReturnsSameSummariesAsSync()
+    {
+        WriteArchiveFile(
+            "async-a.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-async-a","cwd":"C:\\work\\alpha","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            {"timestamp":"2026-04-08T03:45:08.426Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"alpha preview"}]}}
+            """);
+        WriteArchiveFile(
+            "async-b.jsonl",
+            """
+            {"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-async-b","cwd":"C:\\work\\beta","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}
+            {"timestamp":"2026-04-08T03:45:08.426Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"beta preview"}]}}
+            """);
+
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+
+        var syncSessions = service.GetSessions();
+        var asyncSessions = await service.GetSessionsAsync(CancellationToken.None);
+
+        Assert.Equal(syncSessions.Select(item => item.FileName), asyncSessions.Select(item => item.FileName));
+        Assert.Equal(syncSessions.Select(item => item.FirstUserMessagePreview), asyncSessions.Select(item => item.FirstUserMessagePreview));
+    }
+
+    [Fact]
+    public async Task GetSessionsAsync_CanBeCancelled()
+    {
+        WriteArchiveFile("cancel.jsonl", CreateLargeArchiveContent(250000));
+        var service = new ArchiveSessionService(_archivedSessionsDirectory);
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        var task = service.GetSessionsAsync(cancellationTokenSource.Token);
+        cancellationTokenSource.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+    }
+
+    [Fact]
     public void GetSessionDetail_ReturnsRecentMessages()
     {
         var filePath = WriteArchiveFile(
@@ -290,6 +328,22 @@ public sealed class ArchiveSessionServiceTests : IDisposable
         }
 
         TestSqlite.ExecuteNonQuery(_threadStateDatabasePath, sql);
+    }
+
+    private static string CreateLargeArchiveContent(int messageCount)
+    {
+        var lines = new List<string>(messageCount + 1)
+        {
+            """{"timestamp":"2026-04-08T03:45:08.420Z","type":"session_meta","payload":{"id":"session-cancel","cwd":"C:\\work\\demo","originator":"Codex Desktop","cli_version":"0.118.0","source":"vscode"}}"""
+        };
+
+        for (var index = 0; index < messageCount; index++)
+        {
+            lines.Add(
+                $"{{\"timestamp\":\"2026-04-08T03:45:08.426Z\",\"type\":\"response_item\",\"payload\":{{\"type\":\"message\",\"role\":\"user\",\"content\":[{{\"type\":\"input_text\",\"text\":\"message {index}\"}}]}}}}");
+        }
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static class TestSqlite

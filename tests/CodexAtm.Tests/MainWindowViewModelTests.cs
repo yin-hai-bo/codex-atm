@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Threading;
+using CodexAtm.Core.Localization;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
 using CodexAtm.Core.ViewModels;
@@ -8,7 +10,7 @@ namespace CodexAtm.Tests;
 public sealed class MainWindowViewModelTests
 {
     [Fact]
-    public void Refresh_LoadsSessionsAndSelectsNothingByDefault()
+    public async Task RefreshAsync_LoadsSessionsAndSelectsNothingByDefault()
     {
         using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
@@ -18,7 +20,7 @@ public sealed class MainWindowViewModelTests
             ]);
         var viewModel = new MainWindowViewModel(service);
 
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
 
         Assert.Equal(2, viewModel.Sessions.Count);
         Assert.Equal("已归档线程数：2", viewModel.StatusText);
@@ -26,7 +28,7 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void SearchText_FiltersByPreviewAndCwd()
+    public async Task SearchText_FiltersByPreviewAndCwd()
     {
         using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
@@ -35,7 +37,7 @@ public sealed class MainWindowViewModelTests
                 CreateSummary("b.jsonl", @"C:\work\ops", "beta preview")
             ]);
         var viewModel = new MainWindowViewModel(service);
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
 
         viewModel.SearchText = "billing";
         Assert.Single(viewModel.Sessions);
@@ -48,7 +50,7 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void SearchText_FiltersByDisplayTitle()
+    public async Task SearchText_FiltersByDisplayTitle()
     {
         using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
@@ -57,7 +59,7 @@ public sealed class MainWindowViewModelTests
                 CreateSummary("b.jsonl", @"C:\work\ops", "beta preview")
             ]);
         var viewModel = new MainWindowViewModel(service);
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
 
         viewModel.SearchText = "index 读取";
 
@@ -66,7 +68,7 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void ClearingSearchText_RestoresArchivedCountStatusText()
+    public async Task ClearingSearchText_RestoresArchivedCountStatusText()
     {
         using var _ = new UiCultureScope("zh-CN");
         var service = new FakeArchiveSessionService(
@@ -75,7 +77,7 @@ public sealed class MainWindowViewModelTests
                 CreateSummary("b.jsonl", @"C:\work\ops", "beta preview")
             ]);
         var viewModel = new MainWindowViewModel(service);
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
 
         viewModel.SearchText = "billing";
         viewModel.SearchText = string.Empty;
@@ -85,24 +87,24 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void DeleteSelectedSession_UpdatesStatusText()
+    public async Task DeleteSelectedSessionAsync_UpdatesStatusText()
     {
         using var _ = new UiCultureScope("zh-CN");
         var first = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
         var second = CreateSummary("b.jsonl", @"C:\work\b", "beta task");
         var service = new FakeArchiveSessionService([first, second]);
         var viewModel = new MainWindowViewModel(service);
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
         viewModel.SelectedSession = viewModel.Sessions[0];
 
-        viewModel.DeleteSelectedSession(DeletionMode.Permanent);
+        await viewModel.DeleteSelectedSessionAsync(DeletionMode.Permanent);
 
         Assert.Single(viewModel.Sessions);
         Assert.Equal("已归档线程数：1", viewModel.StatusText);
     }
 
     [Fact]
-    public void SelectedSession_LoadsDetail()
+    public async Task SelectedSession_LoadsDetail()
     {
         using var _ = new UiCultureScope("zh-CN");
         var summary = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
@@ -119,7 +121,7 @@ public sealed class MainWindowViewModelTests
         };
         var service = new FakeArchiveSessionService([summary], detail);
         var viewModel = new MainWindowViewModel(service);
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
 
         viewModel.SelectedSession = viewModel.Sessions[0];
 
@@ -161,7 +163,7 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
-    public void ViewModel_UsesEnglishTextsWhenUiCultureIsEnglish()
+    public async Task ViewModel_UsesEnglishTextsWhenUiCultureIsEnglish()
     {
         using var _ = new UiCultureScope("en-US");
         var service = new FakeArchiveSessionService(
@@ -170,7 +172,7 @@ public sealed class MainWindowViewModelTests
             ]);
         var viewModel = new MainWindowViewModel(service, ThemeMode.Dark);
 
-        viewModel.Refresh();
+        await viewModel.RefreshAsync();
         viewModel.SearchText = "alpha";
 
         Assert.Equal("Filtered threads: 1", viewModel.StatusText);
@@ -199,6 +201,85 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("已归档线程数：0", viewModel.StatusText);
     }
 
+    [Fact]
+    public async Task RefreshAsync_RestoresSelectedSessionWhenStillPresent()
+    {
+        using var _ = new UiCultureScope("zh-CN");
+        var first = CreateSummary("a.jsonl", @"C:\work\a", "alpha task");
+        var second = CreateSummary("b.jsonl", @"C:\work\b", "beta task");
+        var service = new FakeArchiveSessionService([first, second]);
+        var viewModel = new MainWindowViewModel(service);
+        await viewModel.RefreshAsync();
+        viewModel.SelectedSession = viewModel.Sessions[1];
+
+        await viewModel.RefreshAsync();
+
+        Assert.NotNull(viewModel.SelectedSession);
+        Assert.Equal("b.jsonl", viewModel.SelectedSession.FileName);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_OnlyLatestResultUpdatesSessions()
+    {
+        using var _ = new UiCultureScope("zh-CN");
+        var firstRefresh = new TaskCompletionSource<IReadOnlyList<ArchiveSessionSummary>>();
+        var secondRefresh = new TaskCompletionSource<IReadOnlyList<ArchiveSessionSummary>>();
+        var callIndex = 0;
+        var service = new FakeArchiveSessionService(
+            [],
+            getSessionsAsyncOverride: _ =>
+            {
+                callIndex++;
+                return callIndex == 1 ? firstRefresh.Task : secondRefresh.Task;
+            });
+        var viewModel = new MainWindowViewModel(service);
+
+        var firstTask = viewModel.RefreshAsync();
+        var secondTask = viewModel.RefreshAsync();
+
+        secondRefresh.SetResult([CreateSummary("second.jsonl", @"C:\work\b", "second")]);
+        await secondTask;
+
+        Assert.Single(viewModel.Sessions);
+        Assert.Equal("second.jsonl", viewModel.Sessions[0].FileName);
+
+        firstRefresh.SetResult([CreateSummary("first.jsonl", @"C:\work\a", "first")]);
+        await firstTask;
+
+        Assert.Single(viewModel.Sessions);
+        Assert.Equal("second.jsonl", viewModel.Sessions[0].FileName);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_SetsBusyStateAndLoadingStatusWhileRunning()
+    {
+        using var _ = new UiCultureScope("zh-CN");
+        var refreshSource = new TaskCompletionSource<IReadOnlyList<ArchiveSessionSummary>>();
+        var startedSource = new TaskCompletionSource();
+        var service = new FakeArchiveSessionService(
+            [],
+            getSessionsAsyncOverride: _ =>
+            {
+                startedSource.SetResult();
+                return refreshSource.Task;
+            });
+        var viewModel = new MainWindowViewModel(service);
+
+        var refreshTask = viewModel.RefreshAsync();
+        await startedSource.Task;
+
+        Assert.True(viewModel.IsBusy);
+        Assert.Equal(CoreText.LoadingArchivedSessions, viewModel.StatusText);
+        Assert.False(viewModel.RefreshCommand.CanExecute(null));
+
+        refreshSource.SetResult([CreateSummary("done.jsonl", @"C:\work\a", "done")]);
+        await refreshTask;
+
+        Assert.False(viewModel.IsBusy);
+        Assert.Equal("已归档线程数：1", viewModel.StatusText);
+        Assert.True(viewModel.RefreshCommand.CanExecute(null));
+    }
+
     private static ArchiveSessionSummary CreateSummary(string fileName, string cwd, string preview, string threadTitle = "")
     {
         return new ArchiveSessionSummary
@@ -218,10 +299,23 @@ public sealed class MainWindowViewModelTests
 
     private sealed class FakeArchiveSessionService(
         IReadOnlyList<ArchiveSessionSummary> sessions,
-        ArchiveSessionDetail? detail = null) : IArchiveSessionService
+        ArchiveSessionDetail? detail = null,
+        Func<CancellationToken, Task<IReadOnlyList<ArchiveSessionSummary>>>? getSessionsAsyncOverride = null) : IArchiveSessionService
     {
         private readonly List<ArchiveSessionSummary> _sessions = [.. sessions];
         private readonly ArchiveSessionDetail? _detail = detail;
+        private readonly Func<CancellationToken, Task<IReadOnlyList<ArchiveSessionSummary>>>? _getSessionsAsyncOverride = getSessionsAsyncOverride;
+
+        public Task<IReadOnlyList<ArchiveSessionSummary>> GetSessionsAsync(CancellationToken cancellationToken)
+        {
+            if (_getSessionsAsyncOverride is not null)
+            {
+                return _getSessionsAsyncOverride(cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<IReadOnlyList<ArchiveSessionSummary>>(_sessions.ToArray());
+        }
 
         public void DeleteSession(string filePath, DeletionMode deletionMode)
         {

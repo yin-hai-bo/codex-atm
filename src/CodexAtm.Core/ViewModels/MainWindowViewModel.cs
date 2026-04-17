@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading;
 using CodexAtm.Core.Localization;
 using CodexAtm.Core.Models;
 using CodexAtm.Core.Services;
@@ -17,6 +18,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private LanguageMode _selectedLanguageMode;
     private bool _isBusy;
     private IReadOnlyList<ArchiveSessionSummary> _allSessions = [];
+    private CancellationTokenSource? _refreshCancellationTokenSource;
+    private int _refreshVersion;
 
     public MainWindowViewModel(
         IArchiveSessionService archiveSessionService,
@@ -159,22 +162,43 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool CanDeleteSelectedSession => !IsBusy && SelectedSession is not null;
 
-    public void Refresh()
+    public async Task RefreshAsync()
     {
+        var previousSelectionPath = SelectedSession?.FilePath;
+        var refreshVersion = Interlocked.Increment(ref _refreshVersion);
+        var refreshCancellationTokenSource = new CancellationTokenSource();
+        var previousCancellationTokenSource = Interlocked.Exchange(ref _refreshCancellationTokenSource, refreshCancellationTokenSource);
+        previousCancellationTokenSource?.Cancel();
+        previousCancellationTokenSource?.Dispose();
+
         IsBusy = true;
+        StatusText = CoreText.LoadingArchivedSessions;
         try
         {
-            var previousSelectionPath = SelectedSession?.FilePath;
-            _allSessions = _archiveSessionService.GetSessions();
+            _allSessions = await _archiveSessionService.GetSessionsAsync(refreshCancellationTokenSource.Token);
+            if (!IsLatestRefresh(refreshVersion, refreshCancellationTokenSource))
+            {
+                return;
+            }
+
             ApplyFilter(previousSelectionPath);
+        }
+        catch (OperationCanceledException) when (!IsLatestRefresh(refreshVersion, refreshCancellationTokenSource))
+        {
         }
         finally
         {
-            IsBusy = false;
+            if (IsLatestRefresh(refreshVersion, refreshCancellationTokenSource))
+            {
+                _refreshCancellationTokenSource = null;
+                IsBusy = false;
+            }
+
+            refreshCancellationTokenSource.Dispose();
         }
     }
 
-    public void DeleteSelectedSession(DeletionMode deletionMode)
+    public async Task DeleteSelectedSessionAsync(DeletionMode deletionMode)
     {
         if (SelectedSession is null)
         {
@@ -187,13 +211,14 @@ public sealed class MainWindowViewModel : ObservableObject
             _archiveSessionService.DeleteSession(SelectedSession.FilePath, deletionMode);
             SelectedSession = null;
             SelectedSessionDetail = null;
-            _allSessions = _archiveSessionService.GetSessions();
-            ApplyFilter();
         }
-        finally
+        catch
         {
             IsBusy = false;
+            throw;
         }
+
+        await RefreshAsync();
     }
 
     public void RefreshLocalizedText()
@@ -208,11 +233,24 @@ public sealed class MainWindowViewModel : ObservableObject
             languageMode.RefreshLocalizedText();
         }
 
-        UpdateStatusText(SearchText.Trim());
+        if (IsBusy)
+        {
+            StatusText = CoreText.LoadingArchivedSessions;
+        }
+        else
+        {
+            UpdateStatusText(SearchText.Trim());
+        }
+
         OnPropertyChanged(nameof(SelectedThemeOption));
         OnPropertyChanged(nameof(SelectedLanguageOption));
         OnPropertyChanged(nameof(SelectedSession));
         OnPropertyChanged(nameof(SelectedSessionDetail));
+    }
+
+    private async void Refresh()
+    {
+        await RefreshAsync();
     }
 
     private void LoadSelectedSessionDetail()
@@ -269,5 +307,11 @@ public sealed class MainWindowViewModel : ObservableObject
         StatusText = string.IsNullOrWhiteSpace(keyword)
             ? CoreText.ArchivedSessionCount(Sessions.Count)
             : CoreText.FilteredSessionCount(Sessions.Count);
+    }
+
+    private bool IsLatestRefresh(int refreshVersion, CancellationTokenSource refreshCancellationTokenSource)
+    {
+        return refreshVersion == _refreshVersion
+            && ReferenceEquals(_refreshCancellationTokenSource, refreshCancellationTokenSource);
     }
 }

@@ -15,8 +15,20 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
     private readonly string _archivedSessionsDirectory = NormalizeDirectory(archivedSessionsDirectory);
     private readonly string _threadStateDatabasePath = ResolveThreadStateDatabasePath(archivedSessionsDirectory, threadStateDatabasePath);
 
+    public Task<IReadOnlyList<ArchiveSessionSummary>> GetSessionsAsync(CancellationToken cancellationToken)
+    {
+        return Task.Run(() => GetSessionsCore(cancellationToken), cancellationToken);
+    }
+
     public IReadOnlyList<ArchiveSessionSummary> GetSessions()
     {
+        return GetSessionsCore(CancellationToken.None);
+    }
+
+    private IReadOnlyList<ArchiveSessionSummary> GetSessionsCore(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (!Directory.Exists(_archivedSessionsDirectory))
         {
             return [];
@@ -25,7 +37,11 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         var threadTitles = LoadThreadTitles();
         return Directory
             .EnumerateFiles(_archivedSessionsDirectory, "*.jsonl", SearchOption.TopDirectoryOnly)
-            .Select(filePath => CreateSummary(filePath, threadTitles))
+            .Select(filePath =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return CreateSummary(filePath, threadTitles, cancellationToken);
+            })
             .OrderBy(item => item.GroupDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenByDescending(item => item.LastWriteTime)
             .ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
@@ -36,7 +52,7 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
     {
         var validatedPath = ValidateSessionPath(filePath);
         var fileInfo = new FileInfo(validatedPath);
-        var parseResult = ParseFile(validatedPath, includeRecentMessages: true);
+        var parseResult = ParseFile(validatedPath, includeRecentMessages: true, CancellationToken.None);
         var threadTitles = LoadThreadTitles();
         return new ArchiveSessionDetail
         {
@@ -69,10 +85,13 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         File.Delete(validatedPath);
     }
 
-    private ArchiveSessionSummary CreateSummary(string filePath, IReadOnlyDictionary<string, string> threadTitles)
+    private ArchiveSessionSummary CreateSummary(
+        string filePath,
+        IReadOnlyDictionary<string, string> threadTitles,
+        CancellationToken cancellationToken = default)
     {
         var fileInfo = new FileInfo(filePath);
-        var parseResult = ParseFile(filePath, includeRecentMessages: false);
+        var parseResult = ParseFile(filePath, includeRecentMessages: false, cancellationToken);
         return CreateSummary(fileInfo, parseResult, threadTitles);
     }
 
@@ -99,8 +118,10 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
         };
     }
 
-    private ArchiveParseResult ParseFile(string filePath, bool includeRecentMessages)
+    private ArchiveParseResult ParseFile(string filePath, bool includeRecentMessages, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (!File.Exists(filePath))
         {
             return ArchiveParseResult.Failed(CoreText.FileNotFound);
@@ -114,6 +135,8 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
             var state = new ArchiveParseAccumulator(includeRecentMessages);
             while ((line = reader.ReadLine()) is not null)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     continue;
@@ -131,6 +154,10 @@ public sealed class ArchiveSessionService(string archivedSessionsDirectory, stri
             }
 
             return state.ToResult();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

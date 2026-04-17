@@ -39,7 +39,7 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         _localizationService.LanguageChanged += LocalizationServiceOnLanguageChanged;
         SourceInitialized += OnSourceInitialized;
-        Loaded += (_, _) => _viewModel.Refresh();
+        Loaded += OnLoadedAsync;
         Closed += (_, _) =>
         {
             _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
@@ -125,6 +125,11 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
 
     private void DeleteSelectedSession(DeletionMode deletionMode, string message)
     {
+        _ = DeleteSelectedSessionAsync(deletionMode, message);
+    }
+
+    private async Task DeleteSelectedSessionAsync(DeletionMode deletionMode, string message)
+    {
         if (_viewModel.SelectedSession is null)
         {
             return;
@@ -143,7 +148,7 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
 
         try
         {
-            _viewModel.DeleteSelectedSession(deletionMode);
+            await _viewModel.DeleteSelectedSessionAsync(deletionMode);
         }
         catch (Exception ex)
         {
@@ -278,6 +283,18 @@ public partial class ArchiveManagerWindow : Window, INotifyPropertyChanged
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
         ApplyTaskbarIcon();
+    }
+
+    private async void OnLoadedAsync(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await _viewModel.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, AppText.RefreshButton, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ApplyTaskbarIcon()

@@ -28,6 +28,8 @@ public static class CoreText
         return IsChinese ? $"符合过滤条件的线程数：{count}" : $"Filtered threads: {count}";
     }
 
+    public static string LoadingArchivedSessions => IsChinese ? "正在加载归档线程…" : "Loading archived threads...";
+
     public static string ArchivedFileNotFound => IsChinese ? "归档文件不存在。" : "Archived file does not exist.";
 
     public static string FileNotFound => IsChinese ? "文件不存在。" : "File does not exist.";
